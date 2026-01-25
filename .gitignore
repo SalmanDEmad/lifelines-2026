@@ -42,3 +42,4 @@ yarn-error.*
 
 # Documentation and guides
 *.md
+!README.md
