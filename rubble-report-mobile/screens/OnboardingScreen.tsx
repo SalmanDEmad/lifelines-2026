@@ -191,7 +191,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       <VStack flex={1} alignItems="center" space="lg" px={SPACING.xl}>
         <Info size={64} color={COLORS.primary} />
         <Heading fontSize={24} color={COLORS.text} textAlign="center">
-          {t('onboarding.welcomeTitle') || 'Welcome to Lifelines'}
+          {t('onboarding.welcomeTitle') || 'Welcome to Amal'}
         </Heading>
         
         <Text fontSize={15} color={COLORS.textSecondary} textAlign="center" lineHeight={24}>
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   },
   optionButtonActive: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '10',
+    backgroundColor: COLORS.primaryLight + '20',
   },
   radioOuter: {
     width: 24,

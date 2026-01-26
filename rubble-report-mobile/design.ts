@@ -1,5 +1,5 @@
 /**
- * Design System - Lifelines Gaza Disaster Reporting App
+ * Design System - Amal Gaza Disaster Reporting App
  * 
  * Centralized design tokens for consistent UI across the app.
  * Uses raw values compatible with Gluestack UI's style props.

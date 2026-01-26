@@ -482,7 +482,7 @@ const SetupScreen = () => {
                     </Box>
                     <VStack flex={1} justifyContent="center">
                       <Text fontSize={16} color={COLORS.text} fontWeight="600">
-                        Lifelines Gaza
+                        Amal Gaza
                       </Text>
                       <Text fontSize={12} color={COLORS.textSecondary} mt={2}>
                         {t('setup.version')} 1.0.0

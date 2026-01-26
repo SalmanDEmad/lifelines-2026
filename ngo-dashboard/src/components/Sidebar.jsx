@@ -5,7 +5,7 @@ export default function Sidebar({ onSignOut }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h1>Lifelines</h1>
+        <h1>Amal</h1>
         <p>NGO Dashboard</p>
       </div>
       

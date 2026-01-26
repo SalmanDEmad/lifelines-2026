@@ -23,7 +23,7 @@
     "version": "Version",
     "offlineFirst": "Offline-First",
     "offlineDesc": "Reports saved locally, synced when online",
-    "welcome": "Welcome to Lifelines",
+    "welcome": "Welcome to Amal",
     "welcomeDesc": "Report rubble, hazards, and blocked roads to help your community",
     "detectLocation": "First, let's detect your zone",
     "detectedZone": "Detected Zone",
@@ -139,7 +139,7 @@
     "account": "Account"
   },
   "onboarding": {
-    "welcomeTitle": "Welcome to Lifelines",
+    "welcomeTitle": "Welcome to Amal",
     "welcomeDesc": "This app helps you report hazards in your area - rubble, blocked roads, and dangers - to help humanitarian organizations respond faster.",
     "feature1": "Take Photos",
     "feature1Desc": "Capture hazards with your camera",

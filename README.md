@@ -1,36 +1,36 @@
-# Lifelines Gaza - Disaster Reporting System
+# Amal Gaza: Disaster Reporting System
 
-Offline-first mobile app + NGO dashboard for reporting and managing infrastructure damage (rubble, hazards, blocked roads) in disaster zones. Built for Gaza 2026 with Arabic/English support.
+Offline first mobile app and NGO dashboard for reporting and managing infrastructure damage (rubble, hazards, blocked roads) in disaster zones. Built for Gaza 2026 with Arabic and English support.
 
 ## 🚀 Features
 
 ### Mobile App (React Native + Expo)
-- ✅ **Offline-first**: Works without internet, syncs when online
-- ✅ **Zone detection**: GPS-based zone assignment (Gaza City, Khan Younis, etc.)
+- ✅ **Offline first**: Works without internet, syncs when online
+- ✅ **Zone detection**: GPS based zone assignment (Gaza City, Khan Younis, etc.)
 - ✅ **Photo capture**: Compressed images with safety warnings
 - ✅ **Categories**: Rubble (with subcategories), Hazard, Blocked Road
 - ✅ **Rubble Types**: UXOs, Chemicals, Human Remains, Recyclable Concrete
 - ✅ **Full i18n**: Arabic (RTL) and English
-- ✅ **SQLite storage**: All reports saved on-device
-- ✅ **Auto-sync**: Reports upload to Supabase when online
-- ✅ **6-Step Onboarding**: Language, description, location, map download, sync settings
+- ✅ **SQLite storage**: All reports saved on device
+- ✅ **Auto sync**: Reports upload to Supabase when online
+- ✅ **6 Step Onboarding**: Language, description, location, map download, sync settings
 - ✅ **Offline Maps**: MapLibre with fallback for Expo Go
 - ✅ **Push Notifications**: Local notifications for sync status
 
 ### NGO Dashboard (React + Vite)
-- ✅ **Web-based**: Runs on any browser at `localhost:3002`
+- ✅ **Web based**: Runs on any browser at `localhost:3002`
 - ✅ **Report Management**: View, approve, reject, delete reports
-- ✅ **Logistics Tab**: Drag-to-prioritize incident list
+- ✅ **Logistics Tab**: Drag to prioritize incident list
 - ✅ **Team Management**: Add team members with phone numbers
 - ✅ **Team Dispatch**: Send GPS coordinates to field teams (SMS ready)
-- ✅ **Interactive Map**: Leaflet-based report visualization
-- ✅ **Real-time Data**: Connected to Supabase
+- ✅ **Interactive Map**: Leaflet based report visualization
+- ✅ **Real time Data**: Connected to Supabase
 
 ### Backend (Supabase)
-- ✅ **PostgreSQL Database**: Cloud-hosted with RLS policies
-- ✅ **Authentication**: User signup/login with roles (civilian, NGO)
+- ✅ **PostgreSQL Database**: Cloud hosted with RLS policies
+- ✅ **Authentication**: User signup and login with roles (civilian, NGO)
 - ✅ **Image Storage**: Supabase Storage buckets
-- ✅ **Real-time Sync**: Mobile ↔ Dashboard
+- ✅ **Real time Sync**: Mobile to Dashboard sync
 
 ## 📱 Mobile App Setup
 
@@ -93,7 +93,7 @@ npm run dev
 Open http://localhost:3002
 
 ### Demo Login
-- **Email**: `ngo@lifelines.app`
+- **Email**: `ngo@amal.app`
 - **Password**: `demo1234`
 
 Click "Create Demo Account" button first if it doesn't exist.
@@ -227,4 +227,4 @@ MIT
 
 ---
 
-Built for Lifelines Gaza Hackathon 2026 🇵🇸
+Built for Amal Gaza Hackathon 2026 🇵🇸

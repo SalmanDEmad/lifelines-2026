@@ -20,7 +20,7 @@ function App() {
     let role = await authApi.getUserRole(user.id);
     
     // If no role or profile, create one with 'ngo' role for demo account
-    if (!role && user.email === 'ngo@lifelines.app') {
+    if (!role && user.email === 'ngo@amal.app') {
       await supabase.from('user_profiles').upsert({
         id: user.id,
         phone: '+970500000000',

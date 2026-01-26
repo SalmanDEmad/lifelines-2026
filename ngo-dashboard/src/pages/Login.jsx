@@ -31,7 +31,7 @@ export default function Login() {
     try {
       // Try to sign up
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: 'ngo@lifelines.app',
+        email: 'ngo@amal.app',
         password: 'demo1234',
         options: {
           data: { role: 'ngo' }
@@ -41,7 +41,7 @@ export default function Login() {
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
           setMessage('Demo account exists! Use credentials below to login.');
-          setEmail('ngo@lifelines.app');
+          setEmail('ngo@amal.app');
           setPassword('demo1234');
         } else {
           throw signUpError;
@@ -55,7 +55,7 @@ export default function Login() {
           updated_at: new Date().toISOString()
         });
         setMessage('Demo account created! You can now login.');
-        setEmail('ngo@lifelines.app');
+        setEmail('ngo@amal.app');
         setPassword('demo1234');
       }
     } catch (err) {
@@ -68,7 +68,7 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h1>Lifelines</h1>
+        <h1>Amal</h1>
         <p>NGO Dashboard Login</p>
 
         <form onSubmit={handleSubmit}>
@@ -126,7 +126,7 @@ export default function Login() {
             fontSize: 13,
             marginBottom: 12 
           }}>
-            <p><strong>Email:</strong> ngo@lifelines.app</p>
+            <p><strong>Email:</strong> ngo@amal.app</p>
             <p><strong>Password:</strong> demo1234</p>
           </div>
           <button 
