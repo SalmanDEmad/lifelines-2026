@@ -53,6 +53,8 @@ export interface Report {
 export const initDatabase = async (): Promise<void> => {
   try {
     const database = await getDB();
+    
+    // Create table if it doesn't exist
     await database.runAsync(
       `CREATE TABLE IF NOT EXISTS reports (
         id TEXT PRIMARY KEY,
@@ -67,6 +69,22 @@ export const initDatabase = async (): Promise<void> => {
         user_id TEXT
       );`
     );
+    
+    // Check if user_id column exists, if not add it
+    try {
+      const result = await database.getFirstAsync<any>(
+        `PRAGMA table_info(reports) WHERE name='user_id';`
+      );
+      
+      if (!result) {
+        console.log('Adding user_id column to existing reports table...');
+        await database.runAsync(`ALTER TABLE reports ADD COLUMN user_id TEXT DEFAULT NULL;`);
+      }
+    } catch (error) {
+      // Ignore PRAGMA errors, column might already exist
+      console.log('Column check skipped (new table)');
+    }
+    
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);

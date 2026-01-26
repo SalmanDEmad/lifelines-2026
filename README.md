@@ -227,4 +227,4 @@ MIT
 
 ---
 
-Built for Amal Gaza Hackathon 2026 🇵🇸
+Built for Amal at Lifelines Hackathon 2026 🇵🇸
