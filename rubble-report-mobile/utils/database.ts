@@ -97,22 +97,47 @@ export const saveReport = async (report: Report): Promise<string> => {
     const database = await getDB();
     const id = report.id || generateUUID();
     
-    await database.runAsync(
-      `INSERT INTO reports (id, zone, category, latitude, longitude, imageUri, description, timestamp, synced, user_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        report.zone,
-        report.category,
-        report.latitude,
-        report.longitude,
-        report.imageUri || '',
-        report.description || '',
-        report.timestamp,
-        0,
-        report.user_id || null,
-      ]
-    );
+    // Try inserting with user_id column first
+    try {
+      await database.runAsync(
+        `INSERT INTO reports (id, zone, category, latitude, longitude, imageUri, description, timestamp, synced, user_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          report.zone,
+          report.category,
+          report.latitude,
+          report.longitude,
+          report.imageUri || '',
+          report.description || '',
+          report.timestamp,
+          0,
+          report.user_id || null,
+        ]
+      );
+    } catch (innerError: any) {
+      // If user_id column doesn't exist, try without it
+      if (innerError?.message?.includes('user_id')) {
+        console.log('user_id column not available, inserting without it');
+        await database.runAsync(
+          `INSERT INTO reports (id, zone, category, latitude, longitude, imageUri, description, timestamp, synced)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            report.zone,
+            report.category,
+            report.latitude,
+            report.longitude,
+            report.imageUri || '',
+            report.description || '',
+            report.timestamp,
+            0,
+          ]
+        );
+      } else {
+        throw innerError;
+      }
+    }
     
     console.log('Report saved:', id);
     return id;
