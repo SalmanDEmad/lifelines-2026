@@ -1,24 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Alert, Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { Box, Text, VStack, HStack, Pressable } from '../components';
-import { MapPin, Navigation, AlertTriangle } from 'lucide-react-native';
+import { MapPin, Navigation, AlertTriangle, List } from 'lucide-react-native';
 import { Report } from '../utils/database';
 import { useTranslation } from '../utils/i18n';
 import { COLORS, SPACING, RADII, SHADOWS } from '../design';
 
-// Try to import MapLibre - it may not be available in Expo Go
-let MapLibreGL: any = null;
-let MapViewRef: any = null;
-let CameraRef: any = null;
+// Check if running in Expo Go (MapLibre won't work there)
+const isExpoGo = Constants.appOwnership === 'expo';
 
-try {
-  const maplibre = require('@maplibre/maplibre-react-native');
-  MapLibreGL = maplibre.default;
-  MapViewRef = maplibre.MapViewRef;
-  CameraRef = maplibre.CameraRef;
-  MapLibreGL.setAccessToken(null);
-} catch (e) {
-  console.log('MapLibre not available - using fallback view');
+// Only try to import MapLibre if NOT in Expo Go
+let MapLibreGL: any = null;
+let isMapLibreAvailable = false;
+
+if (!isExpoGo) {
+  try {
+    const maplibre = require('@maplibre/maplibre-react-native');
+    MapLibreGL = maplibre.default;
+    if (MapLibreGL) {
+      MapLibreGL.setAccessToken(null);
+      isMapLibreAvailable = true;
+    }
+  } catch (e) {
+    console.log('MapLibre not available');
+  }
 }
 
 // OpenStreetMap style URL
@@ -72,7 +78,7 @@ export default function OfflineMap({ reports, onReportPress, userLocation }: Off
   };
 
   // Fallback view when MapLibre is not available (Expo Go)
-  if (!MapLibreGL) {
+  if (!isMapLibreAvailable || isExpoGo) {
     return (
       <View style={styles.container}>
         <View style={styles.fallbackContainer}>

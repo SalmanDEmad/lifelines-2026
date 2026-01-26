@@ -103,7 +103,8 @@
     "map": "History",
     "gotIt": "Got it!",
     "refresh": "Refresh",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "cancel": "Cancel"
   },
   "auth": {
     "welcome": "Welcome Back",

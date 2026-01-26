@@ -1,12 +1,31 @@
 import * as SQLite from 'expo-sqlite';
 
 let db: SQLite.SQLiteDatabase | null = null;
+let isInitializing = false;
+let initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const getDB = async (): Promise<SQLite.SQLiteDatabase> => {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync('reports.db');
+  if (db) return db;
+  
+  // Prevent multiple simultaneous init attempts
+  if (isInitializing && initPromise) {
+    return initPromise;
   }
-  return db;
+  
+  isInitializing = true;
+  initPromise = (async () => {
+    try {
+      db = await SQLite.openDatabaseAsync('reports.db');
+      return db;
+    } catch (error) {
+      console.error('Failed to open database:', error);
+      throw error;
+    } finally {
+      isInitializing = false;
+    }
+  })();
+  
+  return initPromise;
 };
 
 // Simple UUID v4 generator that works in React Native
