@@ -583,7 +583,6 @@ const ReportScreen = () => {
               isLoading={loading}
               IconComponent={Icons.Upload}
             />
-            />
           </Box>
         </VStack>
       </Box>
