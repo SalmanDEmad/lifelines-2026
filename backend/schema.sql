@@ -6,6 +6,7 @@ CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   zone TEXT NOT NULL,
   category TEXT NOT NULL CHECK (category IN ('rubble', 'hazard', 'blocked_road')),
+  subcategory TEXT,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
   description TEXT,

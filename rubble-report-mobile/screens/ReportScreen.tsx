@@ -607,12 +607,6 @@ const ReportScreen = () => {
               </VStack>
             </VStack>
           )}
-                    </Pressable>
-                  );
-                })}
-              </VStack>
-            </VStack>
-          )}
 
           {/* Camera Section */}
           <VStack space="sm">
