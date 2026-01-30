@@ -599,6 +599,89 @@ const MapScreen = () => {
                 </Box>
               )}
 
+              {/* Materials and Hazards Section */}
+              {selectedReport.subcategory && (
+                <Box bg={COLORS.surface} borderRadius={RADII.md} p={SPACING.md} mb={SPACING.sm}>
+                  <VStack space="sm">
+                    {(() => {
+                      // Parse the subcategory string: "materials:concrete,metal|hazards:uxo,chemicals"
+                      const parts = selectedReport.subcategory.split('|');
+                      const materialsMatch = parts.find(p => p.startsWith('materials:'));
+                      const hazardsMatch = parts.find(p => p.startsWith('hazards:'));
+                      
+                      const materials = materialsMatch 
+                        ? materialsMatch.replace('materials:', '').split(',') 
+                        : [];
+                      const hazards = hazardsMatch 
+                        ? hazardsMatch.replace('hazards:', '').split(',') 
+                        : [];
+
+                      return (
+                        <>
+                          {materials.length > 0 && (
+                            <VStack space="xs">
+                              <Text fontSize={12} color={COLORS.textSecondary} fontWeight="600">
+                                Materials:
+                              </Text>
+                              <HStack space="xs" flexWrap="wrap">
+                                {materials.map((material) => (
+                                  <Box
+                                    key={material}
+                                    bg={COLORS.primary}
+                                    borderRadius={RADII.sm}
+                                    px={SPACING.sm}
+                                    py={SPACING.xs}
+                                  >
+                                    <Text fontSize={11} color={COLORS.white} fontWeight="600">
+                                      {material.charAt(0).toUpperCase() + material.slice(1)}
+                                    </Text>
+                                  </Box>
+                                ))}
+                              </HStack>
+                            </VStack>
+                          )}
+                          
+                          {hazards.length > 0 && (
+                            <VStack space="xs">
+                              <Text fontSize={12} color={COLORS.textSecondary} fontWeight="600">
+                                Hazards:
+                              </Text>
+                              <HStack space="xs" flexWrap="wrap">
+                                {hazards.map((hazard) => {
+                                  const hazardLabel = hazard === 'uxo' ? 'UXOs' 
+                                    : hazard === 'bodies' ? 'Human Remains'
+                                    : hazard === 'electrical' ? 'Electrical'
+                                    : hazard === 'blocked_road' ? 'Blocked Road'
+                                    : hazard.charAt(0).toUpperCase() + hazard.slice(1);
+                                  
+                                  return (
+                                    <Box
+                                      key={hazard}
+                                      bg={hazard === 'uxo' ? '#DC2626' 
+                                        : hazard === 'bodies' ? '#7C3AED'
+                                        : hazard === 'chemicals' ? '#F59E0B'
+                                        : hazard === 'electrical' ? '#EF4444'
+                                        : '#92400E'}
+                                      borderRadius={RADII.sm}
+                                      px={SPACING.sm}
+                                      py={SPACING.xs}
+                                    >
+                                      <Text fontSize={11} color={COLORS.white} fontWeight="600">
+                                        {hazardLabel}
+                                      </Text>
+                                    </Box>
+                                  );
+                                })}
+                              </HStack>
+                            </VStack>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </VStack>
+                </Box>
+              )}
+
               {selectedReport.description && (
                 <Box 
                   bg={COLORS.surface} 
