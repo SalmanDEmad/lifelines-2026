@@ -28,6 +28,9 @@ type TranslationContextType = {
 
 const TranslationContext = createContext<TranslationContextType | null>(null);
 
+// Export the context for safe access in components
+export { TranslationContext };
+
 /**
  * Check if language is RTL (Right-to-Left)
  */

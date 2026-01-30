@@ -110,7 +110,7 @@ const SetupScreen = () => {
       t('auth.logout'),
       t('auth.logoutConfirm'),
       [
-        { text: t('map.cancel'), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('auth.logout'),
           style: 'destructive',
@@ -118,7 +118,7 @@ const SetupScreen = () => {
             console.log('Logout confirmed, calling signOut...');
             try {
               await signOut();
-              console.log('SignOut successful');
+              console.log('SignOut successful - will redirect to login screen');
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert(t('auth.error'), t('auth.logoutFailed'));
@@ -127,6 +127,19 @@ const SetupScreen = () => {
         },
       ]
     );
+  };
+
+  const handleGoToOnboarding = async () => {
+    // Reset onboarding and zone to go back to onboarding flow
+    try {
+      await AsyncStorage.removeItem('onboarding_complete');
+      await AsyncStorage.removeItem('userZone');
+      // Reload the app by triggering a state change
+      setIsSetup(false);
+    } catch (error) {
+      console.error('Error resetting onboarding:', error);
+      Alert.alert(t('auth.error'), 'Failed to reset setup');
+    }
   };
 
   // Reusable Components
@@ -385,7 +398,7 @@ const SetupScreen = () => {
                 </Box>
               </HStack>
 
-              {/* Row 2 */}
+              {/* Row 2 - Language Card Only */}
               <HStack space="sm">
                 {/* Language Card */}
                 <Box
@@ -420,42 +433,8 @@ const SetupScreen = () => {
                   </Pressable>
                 </Box>
 
-                {/* Logout Card */}
-                <Box
-                  flex={1}
-                  bg={COLORS.white}
-                  borderRadius={RADII.lg}
-                  p={SPACING.base}
-                  style={SHADOWS.sm}
-                >
-                  <Box
-                    bg={COLORS.error + '20'}
-                    borderRadius={RADII.md}
-                    p={SPACING.sm}
-                    alignSelf="flex-start"
-                    mb={SPACING.xs}
-                  >
-                    <LogOut size={ICON_SIZES.md} color={COLORS.error} />
-                  </Box>
-                  <Text fontSize={11} color={COLORS.textSecondary} mb={SPACING.xs}>
-                    {t('auth.account')}
-                  </Text>
-                  <Pressable
-                    bg={COLORS.error + '10'}
-                    px={SPACING.sm}
-                    py={SPACING.xs}
-                    borderRadius={RADII.sm}
-                    onPress={handleLogout}
-                    style={({ pressed }) => ({
-                      opacity: pressed ? 0.7 : 1,
-                    })}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text fontSize={13} color={COLORS.error} fontWeight="600" textAlign="center">
-                      {t('auth.logout')}
-                    </Text>
-                  </Pressable>
-                </Box>
+                {/* Empty spacer for grid alignment */}
+                <Box flex={1} />
               </HStack>
             </VStack>
 
@@ -531,6 +510,47 @@ const SetupScreen = () => {
                 {t('setup.infoText')}
               </Text>
             </Box>
+
+            {/* Onboarding Button - Full Width */}
+            <Pressable
+              bg={COLORS.primary}
+              borderRadius={RADII.md}
+              py={SPACING.base}
+              px={SPACING.xl}
+              minHeight={LAYOUT.minTouchTarget}
+              justifyContent="center"
+              alignItems="center"
+              onPress={handleGoToOnboarding}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text fontSize={16} color={COLORS.white} fontWeight="600">
+                {t('setup.startOver') || 'Start Over'}
+              </Text>
+            </Pressable>
+
+            {/* Logout Button - Full Width at Bottom */}
+            <Pressable
+              bg={COLORS.error}
+              borderRadius={RADII.md}
+              py={SPACING.base}
+              px={SPACING.xl}
+              minHeight={LAYOUT.minTouchTarget}
+              justifyContent="center"
+              alignItems="center"
+              onPress={handleLogout}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <HStack space="sm" justifyContent="center" alignItems="center">
+                <LogOut size={ICON_SIZES.md} color={COLORS.white} />
+                <Text fontSize={16} color={COLORS.white} fontWeight="600">
+                  {t('auth.logout')}
+                </Text>
+              </HStack>
+            </Pressable>
           </VStack>
         </Box>
       </ScrollView>

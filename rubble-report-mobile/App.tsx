@@ -20,6 +20,7 @@ import MapScreen from './screens/MapScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 import { useReportStore } from './store/reportStore';
 import { initDatabase } from './utils/database';
@@ -139,6 +140,9 @@ function AppContent() {
     );
   }
 
+  // App works without login - onboarding complete, show main app
+  // If user has session, they're logged in; otherwise they use app anonymously
+
   // Auth screens removed - app works without login
   // Users can optionally sign up later in settings
 
@@ -149,7 +153,7 @@ function AppContent() {
       case 'Map':
         return <MapScreen />;
       case 'Settings':
-        return <SetupScreen />;
+        return <SettingsScreen />;
       default:
         return <ReportScreen />;
     }
@@ -198,7 +202,7 @@ function AppContent() {
         <TabButton 
           screen="Map" 
           icon={Map} 
-          label={t('common.map')} 
+          label="Map" 
         />
         <TabButton 
           screen="Settings" 

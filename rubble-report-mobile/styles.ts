@@ -7,6 +7,7 @@ export const COLORS = {
   background: '#FFFFFF',
   border: '#BDBDBD',
   success: '#4CAF50',
+  warning: '#FF9800',
   rubble: '#EF5350',
   hazard: '#FFA726',
   blocked_road: '#AB47BC',

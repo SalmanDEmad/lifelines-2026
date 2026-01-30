@@ -19,6 +19,8 @@ import { useReportStore } from '../store/reportStore';
 import { useTranslation } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryIcon, Icons, ICON_SIZES } from '../design';
+import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
+import { isInGaza, isInPalestineRegion } from '../utils/geospatial';
 
 const CATEGORIES = [
   { id: 'rubble', label: 'rubble' },
@@ -33,9 +35,27 @@ const RUBBLE_SUBCATEGORIES = [
   { id: 'recyclable_concrete', label: 'Recyclable Concrete', color: '#10B981' },
 ];
 
+const HAZARD_SUBCATEGORIES = [
+  { id: 'uxo', label: 'Unexploded Ordnance (UXO)', color: '#DC2626' },
+  { id: 'structural', label: 'Structural Collapse Risk', color: '#F59E0B' },
+  { id: 'electrical', label: 'Electrical Hazard', color: '#EF4444' },
+  { id: 'chemical', label: 'Chemical/Gas Leak', color: '#8B5CF6' },
+  { id: 'water', label: 'Contaminated Water', color: '#3B82F6' },
+  { id: 'medical', label: 'Medical Emergency', color: '#06B6D4' },
+];
+
+const BLOCKED_ROAD_SUBCATEGORIES = [
+  { id: 'debris', label: 'Debris Blocking', color: '#92400E' },
+  { id: 'crater', label: 'Crater/Hole', color: '#78350F' },
+  { id: 'vehicle', label: 'Abandoned Vehicle', color: '#713F12' },
+  { id: 'structure', label: 'Collapsed Structure', color: '#92400E' },
+];
+
 const ReportScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [rubbleSubcategory, setRubbleSubcategory] = useState<string | null>(null);
+  const [hazardSubcategory, setHazardSubcategory] = useState<string | null>(null);
+  const [blockedRoadSubcategory, setBlockedRoadSubcategory] = useState<string | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -58,7 +78,11 @@ const ReportScreen = () => {
 
   const getUserZone = async () => {
     try {
-      const zone = await AsyncStorage.getItem('userZone');
+      // First try 'user_zone' (saved by onboarding), fallback to 'userZone' for backwards compatibility
+      let zone = await AsyncStorage.getItem('user_zone');
+      if (!zone) {
+        zone = await AsyncStorage.getItem('userZone');
+      }
       setUserZone(zone || '');
     } catch (error) {
       console.error('Error getting user zone:', error);
@@ -86,7 +110,7 @@ const ReportScreen = () => {
 
   const showPhotoSafetyWarning = () => {
     Alert.alert(
-      t('report.safetyWarning') || '⚠️ Safety Warning',
+      t('report.safetyWarning') || 'Safety Warning',
       t('report.safetyMessage') || 'Do not endanger yourself when taking photos. Stay away from unstable structures, hazardous materials, and dangerous areas. Your safety is the priority.',
       [
         { text: t('common.cancel') || 'Cancel', style: 'cancel' },
@@ -156,6 +180,45 @@ const ReportScreen = () => {
     showPhotoSafetyWarning();
   };
 
+  const isCoordinateInIsrael = (lat: number, lng: number): boolean => {
+    // Israel approximate bounds (rough approximation for filtering)
+    // North: ~33.3°, South: ~31.0°, East: ~35.9°, West: ~34.2°
+    return lat >= 31.0 && lat <= 33.3 && lng >= 34.2 && lng <= 35.9;
+  };
+
+  const generateRandomCoordinatesInRegion = (regionKey: string) => {
+    const region = REGIONS[regionKey as keyof typeof REGIONS];
+    const targetRegion = region || REGIONS['palestine'];
+    
+    // For Gaza (Palestine), use polygon-based checking
+    const isGazaRegion = regionKey === 'palestine' || !region;
+    
+    let attempts = 0;
+    const maxAttempts = 50; // Prevent infinite loops
+    
+    while (attempts < maxAttempts) {
+      const randomLat = targetRegion.bounds.minLat + Math.random() * (targetRegion.bounds.maxLat - targetRegion.bounds.minLat);
+      const randomLng = targetRegion.bounds.minLng + Math.random() * (targetRegion.bounds.maxLng - targetRegion.bounds.minLng);
+      
+      // For Gaza, use polygon-based geospatial check
+      if (isGazaRegion) {
+        // Only accept coordinates that are actually in Gaza (not in Israel buffer zone)
+        if (isInGaza(randomLat, randomLng) || isInPalestineRegion(randomLat, randomLng)) {
+          return { latitude: randomLat, longitude: randomLng };
+        }
+      } else {
+        // For other regions, just check if it's within bounds
+        return { latitude: randomLat, longitude: randomLng };
+      }
+      
+      attempts++;
+    }
+    
+    // Fallback: use region center if we couldn't find valid coordinates
+    console.warn(`[COORDS] Could not generate valid coordinates after ${maxAttempts} attempts, using region center`);
+    return { latitude: targetRegion.center.latitude, longitude: targetRegion.center.longitude };
+  };
+
   const submitReport = async () => {
     if (!selectedCategory) {
       Alert.alert(t('report.missingInfo'), t('report.selectCategory'));
@@ -167,20 +230,29 @@ const ReportScreen = () => {
       return;
     }
 
-    if (!location) {
-      Alert.alert(t('report.missingInfo'), t('report.locationUnavailable'));
-      return;
-    }
-
     try {
       setLoading(true);
 
+      // Get the selected region to get valid zones
+      const selectedRegion = await AsyncStorage.getItem('selected_region') || DEFAULT_REGION;
+      const regionZones = getZonesByRegion(selectedRegion).map(z => z.name);
+      
+      // Normalize the zone - use the first zone if userZone doesn't match available zones
+      let reportZone = userZone;
+      if (!regionZones.includes(userZone) && regionZones.length > 0) {
+        console.log('Zone mismatch:', userZone, 'not in', regionZones, 'using:', regionZones[0]);
+        reportZone = regionZones[0]; // Use first zone in region
+      }
+
+      // Generate random coordinates within the selected region (for privacy/safety)
+      const randomCoords = generateRandomCoordinatesInRegion(selectedRegion);
+
       const report = {
-        zone: userZone,
+        zone: reportZone,
         category: selectedCategory as 'rubble' | 'hazard' | 'blocked_road',
-        subcategory: selectedCategory === 'rubble' ? rubbleSubcategory : undefined,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        subcategory: selectedCategory === 'rubble' ? rubbleSubcategory : selectedCategory === 'hazard' ? hazardSubcategory : selectedCategory === 'blocked_road' ? blockedRoadSubcategory : undefined,
+        latitude: randomCoords.latitude,
+        longitude: randomCoords.longitude,
         imageUri,
         description: description.trim() || undefined,
         timestamp: Date.now(),
@@ -193,6 +265,8 @@ const ReportScreen = () => {
       // Reset form
       setSelectedCategory(null);
       setRubbleSubcategory(null);
+      setHazardSubcategory(null);
+      setBlockedRoadSubcategory(null);
       setImageUri(null);
       setImageSize(null);
       setDescription('');
@@ -383,6 +457,104 @@ const ReportScreen = () => {
             </VStack>
           )}
 
+          {/* Hazard Subcategory Selection */}
+          {selectedCategory === 'hazard' && (
+            <VStack space="sm">
+              <SectionHeading>{t('report.hazardType') || 'Type of Hazard'}</SectionHeading>
+              <VStack space="sm">
+                {HAZARD_SUBCATEGORIES.map((sub) => {
+                  const isSelected = hazardSubcategory === sub.id;
+                  return (
+                    <Pressable
+                      key={sub.id}
+                      py={SPACING.md}
+                      px={SPACING.lg}
+                      borderRadius={RADII.md}
+                      bg={isSelected ? sub.color : COLORS.surface}
+                      borderWidth={isSelected ? 0 : 1}
+                      borderColor={COLORS.border}
+                      onPress={() => setHazardSubcategory(sub.id)}
+                      minHeight={LAYOUT.minTouchTarget}
+                      flexDirection="row"
+                      alignItems="center"
+                      style={isSelected ? SHADOWS.md : {}}
+                    >
+                      <Box 
+                        w={12} 
+                        h={12} 
+                        borderRadius={6} 
+                        bg={isSelected ? COLORS.white : sub.color} 
+                        mr={SPACING.md}
+                        opacity={isSelected ? 0.9 : 1}
+                      />
+                      <Text
+                        color={isSelected ? COLORS.white : COLORS.text}
+                        fontWeight="600"
+                        fontSize={14}
+                      >
+                        {sub.label}
+                      </Text>
+                      {isSelected && (
+                        <Box ml="auto">
+                          <Icons.Synced size={ICON_SIZES.md} color={COLORS.white} />
+                        </Box>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </VStack>
+            </VStack>
+          )}
+
+          {/* Blocked Road Subcategory Selection */}
+          {selectedCategory === 'blocked_road' && (
+            <VStack space="sm">
+              <SectionHeading>{t('report.blockedRoadType') || 'Type of Blockage'}</SectionHeading>
+              <VStack space="sm">
+                {BLOCKED_ROAD_SUBCATEGORIES.map((sub) => {
+                  const isSelected = blockedRoadSubcategory === sub.id;
+                  return (
+                    <Pressable
+                      key={sub.id}
+                      py={SPACING.md}
+                      px={SPACING.lg}
+                      borderRadius={RADII.md}
+                      bg={isSelected ? sub.color : COLORS.surface}
+                      borderWidth={isSelected ? 0 : 1}
+                      borderColor={COLORS.border}
+                      onPress={() => setBlockedRoadSubcategory(sub.id)}
+                      minHeight={LAYOUT.minTouchTarget}
+                      flexDirection="row"
+                      alignItems="center"
+                      style={isSelected ? SHADOWS.md : {}}
+                    >
+                      <Box 
+                        w={12} 
+                        h={12} 
+                        borderRadius={6} 
+                        bg={isSelected ? COLORS.white : sub.color} 
+                        mr={SPACING.md}
+                        opacity={isSelected ? 0.9 : 1}
+                      />
+                      <Text
+                        color={isSelected ? COLORS.white : COLORS.text}
+                        fontWeight="600"
+                        fontSize={14}
+                      >
+                        {sub.label}
+                      </Text>
+                      {isSelected && (
+                        <Box ml="auto">
+                          <Icons.Synced size={ICON_SIZES.md} color={COLORS.white} />
+                        </Box>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </VStack>
+            </VStack>
+          )}
+
           {/* Camera Section */}
           <VStack space="sm">
             <SectionHeading>{t('report.photo')}</SectionHeading>
@@ -467,63 +639,28 @@ const ReportScreen = () => {
           {/* Location Section */}
           <VStack space="sm">
             <SectionHeading>{t('report.location')}</SectionHeading>
-            {locationLoading ? (
-              <Box 
-                bg={COLORS.surface} 
-                borderRadius={RADII.md} 
-                p={SPACING.lg}
-              >
-                <VStack space="sm">
-                  <Box justifyContent="center" alignItems="center">
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                  </Box>
-                  <Text fontSize={12} color={COLORS.textSecondary} textAlign="center">
-                    Detecting location...
+            <Box
+              bg={COLORS.surface}
+              borderRadius={RADII.lg}
+              p={SPACING.base}
+              borderStartWidth={4}
+              borderStartColor={COLORS.success}
+              style={SHADOWS.sm}
+            >
+              <HStack space="md">
+                <Box justifyContent="center">
+                  <Icons.Location size={ICON_SIZES.lg} color={COLORS.success} />
+                </Box>
+                <VStack flex={1} space="xs" justifyContent="center">
+                  <Text fontSize={12} color={COLORS.textSecondary}>
+                    📍 Random coordinates (privacy protected)
+                  </Text>
+                  <Text fontSize={14} color={COLORS.text} fontWeight="600">
+                    Zone: {userZone}
                   </Text>
                 </VStack>
-              </Box>
-            ) : location ? (
-              <Box
-                bg={COLORS.surface}
-                borderRadius={RADII.lg}
-                p={SPACING.base}
-                borderStartWidth={4}
-                borderStartColor={COLORS.primary}
-                style={SHADOWS.sm}
-              >
-                <HStack space="md">
-                  <Box justifyContent="flex-start" pt={2}>
-                    <Icons.Location size={ICON_SIZES.lg} color={COLORS.primary} />
-                  </Box>
-                  <VStack flex={1} space="xs" justifyContent="center">
-                    <Text fontSize={12} color={COLORS.textSecondary}>
-                      {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-                    </Text>
-                    <Text fontSize={14} color={COLORS.primary} fontWeight="600">
-                      {userZone}
-                    </Text>
-                  </VStack>
-                </HStack>
-              </Box>
-            ) : (
-              <Box
-                bg={COLORS.errorLight}
-                borderRadius={RADII.md}
-                p={SPACING.base}
-                opacity={0.1}
-              >
-                <HStack space="sm">
-                  <Box justifyContent="center">
-                    <Icons.Hazard size={ICON_SIZES.md} color={COLORS.error} />
-                  </Box>
-                  <Box justifyContent="center">
-                    <Text fontSize={14} color={COLORS.error}>
-                      {t('report.locationUnavailable')}
-                    </Text>
-                  </Box>
-                </HStack>
-              </Box>
-            )}
+              </HStack>
+            </Box>
           </VStack>
 
           {/* Status Section */}

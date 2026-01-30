@@ -34,7 +34,8 @@
     "feature2Title": "GPS Location",
     "feature2Desc": "Auto-detect report location",
     "feature3Title": "Local Storage",
-    "feature3Desc": "Reports saved on your device"
+    "feature3Desc": "Reports saved on your device",
+    "startOver": "Start Over"
   },
   "report": {
     "title": "Report Disaster",
@@ -58,7 +59,7 @@
     "largeFileWarning": "Compressed image is {size}KB. Consider taking another photo for better sync performance.",
     "submitted": "Report submitted successfully!",
     "submitError": "Failed to submit report. Please try again.",
-    "safetyWarning": "⚠️ Safety Warning",
+    "safetyWarning": "Safety Warning",
     "safetyMessage": "Do not endanger yourself when taking photos. Stay away from unstable structures, hazardous materials, and dangerous areas. Your safety is the priority.",
     "proceedToPhoto": "I Understand, Take Photo",
     "rubbleType": "Type of Rubble"
@@ -103,7 +104,29 @@
     "gotIt": "Got it!",
     "refresh": "Refresh",
     "loading": "Loading...",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "getStarted": "Get started!",
+    "skip": "Skip"
+  },
+  "settings": {
+    "completeProfile": "Complete your profile to personalize your experience!",
+    "myAccount": "My Account",
+    "addresses": "Addresses",
+    "payment": "Payment",
+    "settings": "Settings",
+    "country": "Country",
+    "selectCountry": "Select Country",
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "notifications": "Notifications",
+    "enableNotifications": "Enable Notifications",
+    "security": "Security",
+    "changePassword": "Change Password",
+    "privacyPolicy": "Privacy Policy",
+    "signOut": "Sign Out",
+    "appVersion": "App Version"
   },
   "auth": {
     "welcome": "Welcome Back",
@@ -136,17 +159,21 @@
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to logout?",
     "logoutFailed": "Logout failed. Please try again.",
-    "account": "Account"
+    "account": "Account",
+    "skipLogin": "Continue Without Login"
   },
   "onboarding": {
     "welcomeTitle": "Welcome to Amal",
     "welcomeDesc": "This app helps you report hazards in your area - rubble, blocked roads, and dangers - to help humanitarian organizations respond faster.",
-    "feature1": "Take Photos",
-    "feature1Desc": "Capture hazards with your camera",
-    "feature2": "Auto Location",
-    "feature2Desc": "GPS coordinates are captured automatically",
-    "feature3": "Works Offline",
-    "feature3Desc": "Reports save locally and sync when online",
+    "feature1": "Create report:",
+    "feature1Desc": "Mark Rubble, or hazards",
+    "feature2": "See nearby hazards:",
+    "feature2Desc": "View community reported dangers",
+    "feature3": "Share with centrals:",
+    "feature3Desc": "Help neighbors find safe paths",
+    "selectRegion": "Select Your Region",
+    "selectRegionDesc": "Choose the region where you are located",
+    "zones": "zones",
     "detectZone": "Detect Your Zone",
     "detectZoneDesc": "We need to know your location to download the right map for your area.",
     "zoneDetected": "Zone Detected",
@@ -163,23 +190,13 @@
     "yesAutoSyncDesc": "Reports upload as soon as you're online",
     "noAutoSync": "No, I'll sync manually",
     "noAutoSyncDesc": "You control when reports are uploaded",
+    "includePhotos": "Include photos",
+    "includePhotosDesc": "Upload images with reports (~500KB each)",
     "photoSync": "Photo Upload",
     "photoSyncDesc": "When syncing, should photos be included? This uses more data.",
     "withPhotos": "Sync with photos",
     "withPhotosDesc": "Full reports with images (~500KB each)",
     "withoutPhotos": "Sync without photos",
     "withoutPhotosDesc": "Text and location only (~1KB each)"
-  },
-  "common": {
-    "setup": "Setup",
-    "settings": "Settings",
-    "report": "Create",
-    "map": "History",
-    "gotIt": "Got it!",
-    "refresh": "Refresh",
-    "loading": "Loading...",
-    "back": "Back",
-    "next": "Next",
-    "getStarted": "Get Started"
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, VStack, HStack, Heading, Pressable } from '../components';
 import { 
@@ -19,6 +19,9 @@ import {
 import { useTranslation, Language } from '../utils/i18n';
 import { COLORS, SPACING, RADII, SHADOWS } from '../design';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { REGIONS, getZonesByRegion } from '../utils/zones';
+import { downloadRegionTiles, getRegionCacheStatus, formatBytes } from '../utils/offlineMapCache';
+import { registerDeviceForNotifications, registerForPushNotifications } from '../utils/notifications';
 
 const { width } = Dimensions.get('window');
 
@@ -26,11 +29,12 @@ interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-type OnboardingStep = 'language' | 'intro' | 'location' | 'download' | 'sync' | 'photos';
+type OnboardingStep = 'language' | 'intro' | 'region' | 'location' | 'download' | 'sync';
 
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('language');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [detectedZone, setDetectedZone] = useState<string | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -41,7 +45,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const insets = useSafeAreaInsets();
   const { t, setLanguage, isRTL } = useTranslation();
 
-  const steps: OnboardingStep[] = ['language', 'intro', 'location', 'download', 'sync', 'photos'];
+  const steps: OnboardingStep[] = ['language', 'intro', 'region', 'location', 'download', 'sync'];
   const currentIndex = steps.indexOf(currentStep);
 
   const handleLanguageSelect = async (lang: Language) => {
@@ -69,19 +73,57 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     */
     
     // DEMO: Simulate location detection
+    // Pick a random zone from the selected region
+    const regionZones = getZonesByRegion(selectedRegion || 'palestine');
+    const randomZone = regionZones[Math.floor(Math.random() * regionZones.length)];
+    
     await new Promise(resolve => setTimeout(resolve, 1500));
-    setDetectedZone('Gaza City - North');
+    setDetectedZone(randomZone?.name || 'Unknown');
     setIsDetectingLocation(false);
   };
 
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadMessage, setDownloadMessage] = useState('');
+
   const handleDownloadMap = async () => {
+    if (!selectedRegion) return;
+    
     setIsDownloading(true);
+    setDownloadProgress(0);
+    setDownloadMessage('Starting download...');
     
-    // DEMO: Simulate map download
-    // TODO: Implement actual tile caching for offline maps
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Register for push notifications first
+    await registerForPushNotifications();
     
-    setDownloadComplete(true);
+    // Download map tiles for the selected region
+    const result = await downloadRegionTiles(
+      selectedRegion,
+      (progress, message) => {
+        setDownloadProgress(progress);
+        setDownloadMessage(message);
+      }
+    );
+    
+    if (result.success) {
+      // Register device for hazard proximity notifications
+      const region = REGIONS[selectedRegion];
+      if (region?.center) {
+        await registerDeviceForNotifications(
+          selectedRegion,
+          region.center.latitude,
+          region.center.longitude,
+          2.0 // 2 mile notification radius
+        );
+      }
+      
+      setDownloadComplete(true);
+      setDownloadMessage(`Downloaded ${result.tilesDownloaded} tiles (${formatBytes(result.sizeBytes)})`);
+    } else {
+      setDownloadMessage('Download failed. You can continue without offline maps.');
+      // Allow continuing even if download failed
+      setDownloadComplete(true);
+    }
+    
     setIsDownloading(false);
   };
 
@@ -91,6 +133,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     await AsyncStorage.setItem('auto_sync', autoSync ? 'true' : 'false');
     await AsyncStorage.setItem('sync_with_photos', syncWithPhotos ? 'true' : 'false');
     await AsyncStorage.setItem('user_zone', detectedZone || 'Unknown');
+    await AsyncStorage.setItem('selected_region', selectedRegion || 'palestine');
     
     onComplete();
   };
@@ -98,12 +141,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const goNext = () => {
     const nextIndex = currentIndex + 1;
     if (nextIndex < steps.length) {
-      // Skip photos step if auto sync is disabled
-      if (steps[nextIndex] === 'photos' && !autoSync) {
-        handleComplete();
-      } else {
-        setCurrentStep(steps[nextIndex]);
-      }
+      setCurrentStep(steps[nextIndex]);
     } else {
       handleComplete();
     }
@@ -120,10 +158,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     switch (currentStep) {
       case 'language': return true;
       case 'intro': return true;
+      case 'region': return selectedRegion !== null;
       case 'location': return detectedZone !== null;
       case 'download': return downloadComplete;
       case 'sync': return true;
-      case 'photos': return true;
       default: return false;
     }
   };
@@ -185,65 +223,158 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     </VStack>
   );
 
-  // Introduction Step
+  // Introduction Step - Redesigned to match reference
   const IntroStep = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <VStack flex={1} alignItems="center" space="lg" px={SPACING.xl}>
-        <Info size={64} color={COLORS.primary} />
-        <Heading fontSize={24} color={COLORS.text} textAlign="center">
-          {t('onboarding.welcomeTitle') || 'Welcome to Amal'}
-        </Heading>
-        
-        <Text fontSize={15} color={COLORS.textSecondary} textAlign="center" lineHeight={24}>
-          {t('onboarding.welcomeDesc') || 'This app helps you report hazards in your area - rubble, blocked roads, and dangers - to help humanitarian organizations respond faster.'}
+    <View style={styles.introContainer}>
+      {/* Skip button */}
+      <TouchableOpacity 
+        style={styles.skipButton}
+        onPress={handleComplete}
+      >
+        <Text fontSize={16} fontWeight="600" color={COLORS.textSecondary}>
+          {t('common.skip') || 'Skip'}
         </Text>
-        
-        <VStack space="md" w="100%" mt={SPACING.lg}>
-          <HStack space="md" alignItems="center" bg={COLORS.surface} p={SPACING.md} borderRadius={RADII.lg}>
-            <Box bg={COLORS.primary + '20'} p={SPACING.sm} borderRadius={RADII.md}>
+      </TouchableOpacity>
+
+      {/* Hero illustration area */}
+      <View style={styles.heroSection}>
+        <View style={styles.heroGradient}>
+          {/* Map pin illustration */}
+          <View style={styles.mapPinContainer}>
+            <MapPin size={80} color={COLORS.primary} />
+          </View>
+          {/* Phone with map illustration */}
+          <View style={styles.phoneIllustration}>
+            <View style={styles.phoneFrame}>
+              <Navigation size={32} color={COLORS.primary} />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* White card section */}
+      <View style={styles.introCard}>
+        {/* Feature cards in horizontal row */}
+        <View style={styles.featureRow}>
+          {/* Feature 1: Create Report */}
+          <View style={styles.featureCard}>
+            <View style={[styles.featureIcon, { backgroundColor: COLORS.primary + '15' }]}>
               <Camera size={24} color={COLORS.primary} />
-            </Box>
-            <VStack flex={1}>
-              <Text fontWeight="600" color={COLORS.text}>
-                {t('onboarding.feature1') || 'Take Photos'}
-              </Text>
-              <Text fontSize={13} color={COLORS.textSecondary}>
-                {t('onboarding.feature1Desc') || 'Capture hazards with your camera'}
-              </Text>
-            </VStack>
-          </HStack>
-          
-          <HStack space="md" alignItems="center" bg={COLORS.surface} p={SPACING.md} borderRadius={RADII.lg}>
-            <Box bg={COLORS.success + '20'} p={SPACING.sm} borderRadius={RADII.md}>
+            </View>
+            <Text style={styles.featureTitle}>
+              {t('onboarding.feature1') || 'Create report:'}
+            </Text>
+            <Text style={styles.featureDesc}>
+              {t('onboarding.feature1Desc') || 'Mark Rubble, or hazards'}
+            </Text>
+          </View>
+
+          {/* Feature 2: See hazards */}
+          <View style={styles.featureCard}>
+            <View style={[styles.featureIcon, { backgroundColor: COLORS.warning + '15' }]}>
+              <AlertTriangle size={24} color={COLORS.warning} />
+            </View>
+            <Text style={styles.featureTitle}>
+              {t('onboarding.feature2') || 'See nearby hazards:'}
+            </Text>
+            <Text style={styles.featureDesc}>
+              {t('onboarding.feature2Desc') || 'View community reported dangers'}
+            </Text>
+          </View>
+
+          {/* Feature 3: Share */}
+          <View style={styles.featureCard}>
+            <View style={[styles.featureIcon, { backgroundColor: COLORS.success + '15' }]}>
               <MapPin size={24} color={COLORS.success} />
-            </Box>
-            <VStack flex={1}>
-              <Text fontWeight="600" color={COLORS.text}>
-                {t('onboarding.feature2') || 'Auto Location'}
-              </Text>
-              <Text fontSize={13} color={COLORS.textSecondary}>
-                {t('onboarding.feature2Desc') || 'GPS coordinates are captured automatically'}
-              </Text>
-            </VStack>
-          </HStack>
-          
-          <HStack space="md" alignItems="center" bg={COLORS.surface} p={SPACING.md} borderRadius={RADII.lg}>
-            <Box bg={COLORS.warning + '20'} p={SPACING.sm} borderRadius={RADII.md}>
-              <Wifi size={24} color={COLORS.warning} />
-            </Box>
-            <VStack flex={1}>
-              <Text fontWeight="600" color={COLORS.text}>
-                {t('onboarding.feature3') || 'Works Offline'}
-              </Text>
-              <Text fontSize={13} color={COLORS.textSecondary}>
-                {t('onboarding.feature3Desc') || 'Reports save locally and sync when online'}
-              </Text>
-            </VStack>
-          </HStack>
-        </VStack>
-      </VStack>
-    </ScrollView>
+            </View>
+            <Text style={styles.featureTitle}>
+              {t('onboarding.feature3') || 'Share with centrals:'}
+            </Text>
+            <Text style={styles.featureDesc}>
+              {t('onboarding.feature3Desc') || 'Help neighbors find safe paths'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Pagination dots */}
+        <View style={styles.paginationDots}>
+          <View style={[styles.dot, styles.dotActive]} />
+          <View style={styles.dot} />
+          <View style={styles.dot} />
+          <View style={styles.dot} />
+        </View>
+
+        {/* Get Started button */}
+        <TouchableOpacity 
+          style={styles.getStartedButton}
+          onPress={goNext}
+        >
+          <Text style={styles.getStartedText}>
+            {t('common.getStarted') || 'Get started!'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
+
+  // Region Selection Step
+  const RegionStep = () => {
+    const regions = Object.entries(REGIONS);
+    
+    return (
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <VStack flex={1} alignItems="center" space="lg" px={SPACING.xl}>
+          <Globe size={64} color={COLORS.primary} />
+          <Heading fontSize={24} color={COLORS.text} textAlign="center">
+            {t('onboarding.selectRegion') || 'Select Your Region'}
+          </Heading>
+          <Text fontSize={15} color={COLORS.textSecondary} textAlign="center">
+            {t('onboarding.selectRegionDesc') || 'Choose the region where you are located'}
+          </Text>
+          
+          <VStack space="md" w="100%" mt={SPACING.lg}>
+            {regions.map(([key, region]) => (
+              <TouchableOpacity
+                key={key}
+                style={[
+                  styles.regionButton,
+                  selectedRegion === key && styles.regionButtonActive
+                ]}
+                onPress={() => setSelectedRegion(key)}
+              >
+                <HStack flex={1} alignItems="center" space="md">
+                  <Image
+                    source={{ uri: region.flagUrl }}
+                    style={{ width: 32, height: 32 }}
+                  />
+                  <VStack flex={1}>
+                    <Text 
+                      style={{ 
+                        fontSize: 18, 
+                        fontWeight: '600', 
+                        color: selectedRegion === key ? '#FFFFFF' : COLORS.text 
+                      }}
+                    >
+                      {selectedLanguage === 'ar' ? region.nameAr : region.name}
+                    </Text>
+                    <Text 
+                      style={{ 
+                        fontSize: 14, 
+                        color: selectedRegion === key ? 'rgba(255,255,255,0.8)' : COLORS.textSecondary 
+                      }}
+                    >
+                      {getZonesByRegion(key).length} {t('onboarding.zones') || 'zones'}
+                    </Text>
+                  </VStack>
+                  {selectedRegion === key && <CheckCircle size={24} color="#FFFFFF" />}
+                </HStack>
+              </TouchableOpacity>
+            ))}
+          </VStack>
+        </VStack>
+      </ScrollView>
+    );
+  };
 
   // Location Detection Step
   const LocationStep = () => (
@@ -344,73 +475,104 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     </VStack>
   );
 
-  // Auto Sync Step
+  // Auto Sync Step (merged with photo sync)
   const SyncStep = () => (
-    <VStack flex={1} justifyContent="center" alignItems="center" space="xl" px={SPACING.xl}>
-      <Wifi size={64} color={COLORS.primary} />
-      <Heading fontSize={24} color={COLORS.text} textAlign="center">
-        {t('onboarding.autoSync') || 'Automatic Sync'}
-      </Heading>
-      <Text fontSize={15} color={COLORS.textSecondary} textAlign="center">
-        {t('onboarding.autoSyncDesc') || 'Do you want to automatically upload reports when an internet connection is available?'}
-      </Text>
-      
-      <VStack space="md" w="100%" mt={SPACING.lg}>
-        <TouchableOpacity
-          style={[
-            styles.optionButton,
-            autoSync && styles.optionButtonActive
-          ]}
-          onPress={() => setAutoSync(true)}
-        >
-          <HStack flex={1} alignItems="center" space="md">
-            <Box 
-              style={[
-                styles.radioOuter,
-                autoSync && styles.radioOuterActive
-              ]}
-            >
-              {autoSync && <View style={styles.radioInner} />}
-            </Box>
-            <VStack flex={1}>
-              <Text fontWeight="600" color={COLORS.text}>
-                {t('onboarding.yesAutoSync') || 'Yes, sync automatically'}
-              </Text>
-              <Text fontSize={13} color={COLORS.textSecondary}>
-                {t('onboarding.yesAutoSyncDesc') || 'Reports upload as soon as you\'re online'}
-              </Text>
-            </VStack>
-          </HStack>
-        </TouchableOpacity>
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <VStack flex={1} alignItems="center" space="xl" px={SPACING.xl}>
+        <Wifi size={64} color={COLORS.primary} />
+        <Heading fontSize={24} color={COLORS.text} textAlign="center">
+          {t('onboarding.autoSync') || 'Automatic Sync'}
+        </Heading>
+        <Text fontSize={15} color={COLORS.textSecondary} textAlign="center">
+          {t('onboarding.autoSyncDesc') || 'Do you want to automatically upload reports when an internet connection is available?'}
+        </Text>
         
-        <TouchableOpacity
-          style={[
-            styles.optionButton,
-            !autoSync && styles.optionButtonActive
-          ]}
-          onPress={() => setAutoSync(false)}
-        >
-          <HStack flex={1} alignItems="center" space="md">
-            <Box 
-              style={[
-                styles.radioOuter,
-                !autoSync && styles.radioOuterActive
-              ]}
-            >
-              {!autoSync && <View style={styles.radioInner} />}
-            </Box>
-            <VStack flex={1}>
-              <Text fontWeight="600" color={COLORS.text}>
-                {t('onboarding.noAutoSync') || 'No, I\'ll sync manually'}
-              </Text>
-              <Text fontSize={13} color={COLORS.textSecondary}>
-                {t('onboarding.noAutoSyncDesc') || 'You control when reports are uploaded'}
-              </Text>
+        <VStack space="md" w="100%" mt={SPACING.lg}>
+          {/* Yes, sync automatically */}
+          <TouchableOpacity
+            style={[
+              styles.optionButton,
+              autoSync && styles.optionButtonActive
+            ]}
+            onPress={() => setAutoSync(true)}
+          >
+            <VStack space="md" w="100%">
+              <HStack alignItems="center" space="md">
+                <Box 
+                  style={[
+                    styles.radioOuter,
+                    autoSync && styles.radioOuterActive
+                  ]}
+                >
+                  {autoSync && <View style={styles.radioInner} />}
+                </Box>
+                <VStack flex={1}>
+                  <Text style={{ fontWeight: '600', color: COLORS.text }}>
+                    {t('onboarding.yesAutoSync') || 'Yes, sync automatically'}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: COLORS.textSecondary }}>
+                    {t('onboarding.yesAutoSyncDesc') || 'Reports upload as soon as you\'re online'}
+                  </Text>
+                </VStack>
+              </HStack>
+              
+              {/* Photo upload sub-option - only visible when auto sync is selected */}
+              {autoSync && (
+                <TouchableOpacity
+                  style={styles.subOptionButton}
+                  onPress={() => setSyncWithPhotos(!syncWithPhotos)}
+                >
+                  <HStack alignItems="center" space="md">
+                    <Box style={[
+                      styles.checkboxOuter,
+                      syncWithPhotos && styles.checkboxActive
+                    ]}>
+                      {syncWithPhotos && <CheckCircle size={16} color={COLORS.white} />}
+                    </Box>
+                    <VStack flex={1}>
+                      <Text style={{ fontWeight: '600', color: COLORS.text, fontSize: 14 }}>
+                        {t('onboarding.includePhotos') || 'Include photos'}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textSecondary }}>
+                        {t('onboarding.includePhotosDesc') || 'Upload images with reports (~500KB each)'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </TouchableOpacity>
+              )}
             </VStack>
-          </HStack>
-        </TouchableOpacity>
+          </TouchableOpacity>
+          
+          {/* No, sync manually */}
+          <TouchableOpacity
+            style={[
+              styles.optionButton,
+              !autoSync && styles.optionButtonActive
+            ]}
+            onPress={() => setAutoSync(false)}
+          >
+            <HStack alignItems="center" space="md">
+              <Box 
+                style={[
+                  styles.radioOuter,
+                  !autoSync && styles.radioOuterActive
+                ]}
+              >
+                {!autoSync && <View style={styles.radioInner} />}
+              </Box>
+              <VStack flex={1}>
+                <Text style={{ fontWeight: '600', color: COLORS.text }}>
+                  {t('onboarding.noAutoSync') || 'No, I\'ll sync manually'}
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.textSecondary }}>
+                  {t('onboarding.noAutoSyncDesc') || 'You control when reports are uploaded'}
+                </Text>
+              </VStack>
+            </HStack>
+          </TouchableOpacity>
+        </VStack>
       </VStack>
-    </VStack>
+    </ScrollView>
   );
 
   // Photo Sync Step
@@ -486,10 +648,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     switch (currentStep) {
       case 'language': return <LanguageStep />;
       case 'intro': return <IntroStep />;
+      case 'region': return <RegionStep />;
       case 'location': return <LocationStep />;
       case 'download': return <DownloadStep />;
       case 'sync': return <SyncStep />;
-      case 'photos': return <PhotosStep />;
       default: return null;
     }
   };
@@ -523,7 +685,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           disabled={!canProceed()}
         >
           <Text color={COLORS.white} fontWeight="600" fontSize={16}>
-            {currentStep === 'photos' || (currentStep === 'sync' && !autoSync) 
+            {currentStep === 'sync' 
               ? (t('common.getStarted') || 'Get Started')
               : (t('common.next') || 'Next')
             }
@@ -544,6 +706,139 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingVertical: SPACING.xl,
   },
+  // Intro step styles - matching reference design
+  introContainer: {
+    flex: 1,
+    backgroundColor: '#E8EEE4', // Soft sage green background
+  },
+  skipButton: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  heroSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  heroGradient: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapPinContainer: {
+    marginBottom: -20,
+    zIndex: 2,
+  },
+  phoneIllustration: {
+    position: 'relative',
+    width: 200,
+    height: 150,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  phoneFrame: {
+    width: 60,
+    height: 100,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    position: 'absolute',
+    bottom: 20,
+    left: 30,
+    transform: [{ rotate: '-15deg' }],
+  },
+  introCard: {
+    backgroundColor: '#FAFAFA',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    paddingTop: 32,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  featureCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  featureIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  featureTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  featureDesc: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 28,
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#C4C4C4',
+  },
+  dotActive: {
+    backgroundColor: COLORS.primary,
+  },
+  getStartedButton: {
+    backgroundColor: '#A8C5A0', // Sage green button
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 30,
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  getStartedText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  // Original styles
   progressDot: {
     width: 8,
     height: 8,
@@ -568,6 +863,19 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   languageButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  regionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    borderRadius: RADII.lg,
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  regionButtonActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
@@ -610,6 +918,29 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: COLORS.primary,
+  },
+  subOptionButton: {
+    marginTop: SPACING.sm,
+    marginLeft: 36,
+    padding: SPACING.md,
+    borderRadius: RADII.md,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  checkboxOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+  },
+  checkboxActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   backButton: {
     flexDirection: 'row',

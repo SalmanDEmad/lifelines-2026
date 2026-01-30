@@ -1,44 +1,69 @@
-# Amal Gaza: Disaster Reporting System
+# Amal: Analytic and Logistic Software for disaster/hazard/rubble reporting for civilians, NGOs, journalists and academics
 
-Offline first mobile app and NGO dashboard for reporting and managing infrastructure damage (rubble, hazards, blocked roads) in disaster zones. Built for Gaza 2026 with Arabic and English support.
+A disaster reporting system that actually works offline. Built for Gaza. Works anywhere.
 
-## 🚀 Features
+---
 
-### Mobile App (React Native + Expo)
-- ✅ **Offline first**: Works without internet, syncs when online
-- ✅ **Zone detection**: GPS based zone assignment (Gaza City, Khan Younis, etc.)
-- ✅ **Photo capture**: Compressed images with safety warnings
-- ✅ **Categories**: Rubble (with subcategories), Hazard, Blocked Road
-- ✅ **Rubble Types**: UXOs, Chemicals, Human Remains, Recyclable Concrete
-- ✅ **Full i18n**: Arabic (RTL) and English
-- ✅ **SQLite storage**: All reports saved on device
-- ✅ **Auto sync**: Reports upload to Supabase when online
-- ✅ **6 Step Onboarding**: Language, description, location, map download, sync settings
-- ✅ **Offline Maps**: MapLibre with fallback for Expo Go
-- ✅ **Push Notifications**: Local notifications for sync status
+## 1. Overview
 
-### NGO Dashboard (React + Vite)
-- ✅ **Web based**: Runs on any browser at `localhost:3002`
-- ✅ **Report Management**: View, approve, reject, delete reports
-- ✅ **Logistics Tab**: Drag to prioritize incident list
-- ✅ **Team Management**: Add team members with phone numbers
-- ✅ **Team Dispatch**: Send GPS coordinates to field teams (SMS ready)
-- ✅ **Interactive Map**: Leaflet based report visualization
-- ✅ **Real time Data**: Connected to Supabase
+### 1.1 The Problem
 
-### Backend (Supabase)
-- ✅ **PostgreSQL Database**: Cloud hosted with RLS policies
-- ✅ **Authentication**: User signup and login with roles (civilian, NGO)
-- ✅ **Image Storage**: Supabase Storage buckets
-- ✅ **Real time Sync**: Mobile to Dashboard sync
+People in conflict zones need to report rubble, hazards, blocked roads. They don't have reliable internet. They don't have time to create accounts. They need something that works when everything else doesn't.
 
-## 📱 Mobile App Setup
+Most disaster apps assume connectivity. Ours assumes the opposite.
 
-### Prerequisites
-- Node.js 18+ 
-- Expo Go app on your phone (iOS/Android)
+### 1.2 What This Is
 
-### Installation
+Two things:
+
+1. **Mobile App** — React Native. Reports go to local SQLite first. Syncs when it can. Works in Arabic with full RTL. No login required.
+
+2. **NGO Dashboard** — React. See all reports on a map. Prioritize. Dispatch teams. Export to CSV/PDF. Analytics by region.
+
+Both talk to Supabase. The mobile app doesn't need a backend server. It syncs directly.
+
+### 1.3 Supported Regions
+
+Eight conflict zones supported out of the box:
+
+| Region | Notes |
+|--------|-------|
+| Palestine | Gaza Strip boundary-aware — coordinates never fall inside Israel |
+| Sudan | — |
+| Yemen | — |
+| Syria | — |
+| Ukraine | — |
+| Afghanistan | — |
+| Lebanon | — |
+| Somalia | — |
+
+Adding more is trivial. Edit `utils/zones.ts`.
+
+---
+
+## 2. Mobile App
+
+### 2.1 Features
+
+- **Offline-first**: SQLite stores everything locally. Reports queue until you have signal.
+- **Photo capture**: Compressed to ~500KB. Location randomized within your zone for privacy.
+- **Categories**: Rubble, Hazard, Blocked Road. Each has subcategories.
+- **Hazard subcategories**: UXO, Structural Risk, Electrical, Chemical/Gas, Contaminated Water, Medical Emergency.
+- **Notifications**: Alerts you when sync completes. Warns you when hazards are reported within 2 miles.
+- **No login**: Device gets an ID. That's it.
+
+### 2.2 Tech Stack
+
+```
+React Native (Expo SDK 54)
+Gluestack UI + NativeWind
+Zustand for state
+expo-sqlite for local storage
+MapLibre GL for maps
+Supabase for backend
+```
+
+### 2.3 Running the App
 
 ```bash
 cd rubble-report-mobile
@@ -46,43 +71,31 @@ npm install
 npx expo start
 ```
 
-Scan the QR code with Expo Go app.
+Scan the QR with Expo Go.
 
-### Building APK
+### 2.4 Building APK
 
 ```bash
-# Install EAS CLI
 npm install -g eas-cli
-
-# Build APK (takes ~15 minutes)
 eas build --platform android --profile preview
 ```
 
-### Tech Stack
-- **Framework**: React Native (Expo SDK 54)
-- **UI**: Gluestack UI + NativeWind
-- **State**: Zustand
-- **Storage**: expo-sqlite
-- **Maps**: MapLibre (requires dev build)
-- **Auth**: Supabase Auth
-- **i18n**: Custom translation system
+Takes about 15 minutes. You'll get a download link.
 
-### File Structure
-```
-rubble-report-mobile/
-├── screens/          # Onboarding, Report, Map, Login, Signup, Settings
-├── components/       # OfflineMap, RTL-aware UI components
-├── context/          # AuthContext, RTLContext
-├── utils/            # Database, i18n, sync, notifications
-├── store/            # Zustand state management
-├── locales/          # Arabic/English translations
-├── design.ts         # Design system (colors, spacing, icons)
-└── App.tsx           # Main navigation with tab bar
-```
+---
 
-## 🖥️ NGO Dashboard Setup
+## 3. NGO Dashboard
 
-### Installation
+### 3.1 Features
+
+- **Map view**: All reports plotted. Filter by region. Clustering for performance.
+- **Status management**: Pending → In Progress → Resolved.
+- **Logistics**: Drag to reorder priority. Dispatch teams with one click.
+- **Teams**: Add field workers with phone numbers. SMS-ready.
+- **Analytics**: Charts by category, status, region. Time series. Hazard breakdowns.
+- **Export**: CSV and PDF. One click.
+
+### 3.2 Running the Dashboard
 
 ```bash
 cd ngo-dashboard
@@ -90,141 +103,218 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3002
+Opens at `http://localhost:3002`
 
-### Demo Login
-- **Email**: `ngo@amal.app`
-- **Password**: `demo1234`
+Demo login: `ngo@amal.app` / `demo1234`
 
-Click "Create Demo Account" button first if it doesn't exist.
+### 3.3 Tech Stack
 
-### Dashboard Pages
-
-| Page | Description |
-|------|-------------|
-| **Dashboard** | Overview stats, map with all reports |
-| **Reports** | List view, status changes (pending/in-progress/resolved), delete |
-| **Logistics** | Drag to prioritize, select team, dispatch with GPS |
-| **Teams** | Add/remove field team members with phone numbers |
-
-### Tech Stack
-- **Framework**: React 18 + Vite
-- **Routing**: react-router-dom
-- **Maps**: Leaflet + react-leaflet
-- **Icons**: lucide-react
-- **Auth**: Supabase Auth
-
-## 🗄️ Database Setup (Supabase)
-
-### 1. Create Project
-Go to https://supabase.com and create a new project.
-
-### 2. Run SQL Schema
-
-```sql
--- Reports table
-CREATE TABLE IF NOT EXISTS reports (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  zone TEXT NOT NULL,
-  category TEXT NOT NULL,
-  subcategory TEXT,
-  latitude DECIMAL(10, 8),
-  longitude DECIMAL(11, 8),
-  description TEXT,
-  image_url TEXT,
-  timestamp TIMESTAMPTZ DEFAULT NOW(),
-  status TEXT DEFAULT 'pending',
-  user_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- User profiles table
-CREATE TABLE IF NOT EXISTS user_profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id),
-  phone TEXT,
-  role TEXT DEFAULT 'civilian',
-  push_token TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Teams table
-CREATE TABLE IF NOT EXISTS teams (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
 ```
-
-### 3. Get Credentials
-From Project Settings → API, update in code:
-- `rubble-report-mobile/utils/supabase.ts`
-- `ngo-dashboard/src/lib/supabase.js`
-
-## 📊 Categories
-
-### Main Categories
-| ID | Label | Color |
-|----|-------|-------|
-| `rubble` | Rubble | Orange |
-| `hazard` | Hazard | Red |
-| `blocked_road` | Blocked Road | Blue |
-
-### Rubble Subcategories
-| ID | Label | Description |
-|----|-------|-------------|
-| `uxos` | UXOs | Unexploded ordnance - DANGER |
-| `chemicals` | Chemicals | Hazardous materials |
-| `human_remains` | Human Remains | Requires special handling |
-| `recyclable_concrete` | Recyclable Concrete | Safe for processing |
-
-## 🌍 Translation System
-
-### Supported Languages
-- **English** (default)
-- **Arabic** (RTL support)
-
-### Adding New Language
-1. Create `locales/XX.json`
-2. Copy structure from `locales/en.json`
-3. Translate all keys
-4. Update `utils/i18n.tsx`
-
-## 🔒 Security Notes
-
-**Current setup is for hackathon/demo only.**
-
-For production:
-- Implement proper RLS policies
-- Add rate limiting
-- Secure API endpoints
-- Input validation
-
-## 🚢 Deployment
-
-### Mobile App
-```bash
-eas build --platform android --profile production
+React 18 + Vite
+react-leaflet for maps
+Recharts for analytics
+Supercluster for marker clustering
+jsPDF for exports
+Supabase Auth
 ```
-
-### NGO Dashboard
-```bash
-cd ngo-dashboard
-npm run build
-# Deploy dist/ folder to Vercel/Netlify
-```
-
-## 🐛 Known Issues
-
-1. **MapLibre**: Requires dev build, shows fallback in Expo Go
-2. **Push Notifications**: Full functionality requires dev build
-3. **RTL Icons**: Some icons don't flip in Arabic mode
-
-## 📄 License
-
-MIT
 
 ---
 
-Built for Amal at Lifelines Hackathon 2026 🇵🇸
+## 4. Notifications
+
+### 4.1 Sync Alerts
+
+When your queued reports finally upload, you get a notification. Works in background. Device-specific — won't leak to other phones.
+
+### 4.2 Hazard Proximity Alerts
+
+New hazard reported within 2 miles? You get alerted. Radius is configurable. Intensity-based — UXO gets a 5-mile radius, contaminated water gets 1 mile.
+
+This uses Supabase Realtime. The app subscribes to the `reports` table filtered by `category=hazard`. When a new row appears, it calculates distance and fires a local notification if you're in range.
+
+Works in Expo Go.
+
+---
+
+## 5. Offline Maps
+
+### 5.1 How It Works
+
+Tiles download during onboarding. Cached to device using `expo-file-system`. Four zoom levels per region. ~500 tiles, ~10MB.
+
+The code is in `utils/offlineMapCache.ts`. Downloads happen in batches of 5 to not hammer the tile server.
+
+### 5.2 Current Limitation
+
+The WebView map doesn't read from local cache yet. The tiles are there. Integration is TODO.
+
+---
+
+## 6. Photo Upload
+
+### 6.1 How It Works
+
+Photos go to Supabase Storage. Bucket is `report-photos`. Each report gets a folder. Multiple photos per report supported.
+
+The upload code is in `utils/photoUpload.ts`. Uses base64 encoding because React Native.
+
+### 6.2 Current Limitation
+
+`syncManager.ts` doesn't call the upload function yet. The photo URI is stored locally but not synced. Integration is TODO.
+
+---
+
+## 7. Database
+
+### 7.1 Schema
+
+Supabase PostgreSQL. Three tables:
+
+```sql
+reports (id, zone, category, subcategory, latitude, longitude, description, image_url, timestamp, status, user_id)
+user_profiles (id, phone, role, push_token)
+teams (id, name, phone)
+device_tokens (push_token, device_id, region, latitude, longitude, notification_radius_miles)
+```
+
+### 7.2 Setup
+
+Run the SQL files in `backend/` to set up:
+
+| File | Purpose |
+|------|---------|
+| `schema.sql` | Core tables |
+| `push-notifications-schema.sql` | Device tokens and hazard queue |
+| `storage-setup.sql` | Photo bucket |
+
+---
+
+## 8. File Structure
+
+### 8.1 Mobile App
+
+```
+rubble-report-mobile/
+├── screens/           # OnboardingScreen, ReportScreen, MapScreen, SettingsScreen
+├── components/        # OfflineMap, index.tsx (Gluestack exports)
+├── utils/
+│   ├── database.ts         # SQLite schema and queries
+│   ├── syncManager.ts      # Supabase sync with retry
+│   ├── notifications.ts    # Push/local notifications, hazard alerts
+│   ├── offlineMapCache.ts  # Tile downloading and caching
+│   ├── photoUpload.ts      # Supabase Storage upload
+│   ├── realtimeSync.ts     # Supabase Realtime subscriptions
+│   ├── zones.ts            # Region definitions with bounds
+│   ├── geospatial.ts       # Gaza polygon, point-in-polygon
+│   └── i18n.tsx            # Translation system
+├── locales/           # en.json, ar.json
+├── store/             # Zustand stores
+└── App.tsx
+```
+
+### 8.2 Dashboard
+
+```
+ngo-dashboard/
+├── src/
+│   ├── pages/
+│   │   ├── Dashboard.jsx    # Map, stats, export buttons
+│   │   ├── Analytics.jsx    # Charts and graphs
+│   │   ├── Reports.jsx      # Report list
+│   │   ├── Logistics.jsx    # Drag-to-reorder, dispatch
+│   │   ├── Teams.jsx        # Team management
+│   │   └── Login.jsx
+│   ├── components/          # Sidebar, Header
+│   └── lib/
+│       ├── supabase.js      # API functions
+│       ├── export.js        # CSV/PDF generation
+│       └── emoji.js         # Twemoji helpers
+└── index.html
+```
+
+---
+
+## 9. Feature Status
+
+### 9.1 Implemented Features
+
+| Feature | Implemented | Tested |
+|---------|-------------|--------|
+| Offline SQLite storage | [x] | [ ] |
+| Supabase sync with retry | [x] | [ ] |
+| Photo capture + compression | [x] | [ ] |
+| Random coordinates for privacy | [x] | [ ] |
+| Gaza boundary polygon check | [x] | [ ] |
+| Arabic/English i18n | [x] | [ ] |
+| RTL layout | [x] | [ ] |
+| Hazard subcategories | [x] | [ ] |
+| Local sync notifications | [x] | [ ] |
+| Hazard proximity alerts | [x] | [ ] |
+| Device token registration | [x] | [ ] |
+| Offline tile caching infra | [x] | [ ] |
+| Dashboard with map | [x] | [ ] |
+| Report status management | [x] | [ ] |
+| Drag-to-reorder logistics | [x] | [ ] |
+| SMS dispatch modal | [x] | [ ] |
+| Team management | [x] | [ ] |
+| Analytics page with charts | [x] | [ ] |
+| CSV export | [x] | [ ] |
+| PDF export | [x] | [ ] |
+| Map marker clustering | [x] | [ ] |
+| Realtime sync utilities | [x] | [ ] |
+
+### 9.2 Not Yet Implemented
+
+| Feature | Implemented | Tested | Notes |
+|---------|-------------|--------|-------|
+| Photo sync to Supabase | [ ] | [ ] | Code exists, not wired into syncManager |
+| Offline map display | [ ] | [ ] | Tiles cached but WebView doesn't use them |
+| Server-side push | [ ] | [ ] | Needs Expo EAS build + Edge Function |
+| Full map clustering integration | [ ] | [ ] | Supercluster ready, not rendering clusters |
+| Report verification workflow | [ ] | [ ] | NGO marking reports as verified |
+| Heatmap visualization | [ ] | [ ] | Would be nice |
+| Email alerts for critical hazards | [ ] | [ ] | Would be nice |
+
+---
+
+## 10. Running Everything
+
+### 10.1 Development Setup
+
+Three terminals:
+
+```bash
+# Terminal 1 - Mobile
+cd rubble-report-mobile && npx expo start
+
+# Terminal 2 - Dashboard  
+cd ngo-dashboard && npm run dev
+
+# Terminal 3 - Backend (optional)
+cd backend && npm run dev
+```
+
+Mobile syncs directly to Supabase. The backend is only needed if you want custom API logic.
+
+---
+
+## 11. Security
+
+### 11.1 Production Checklist
+
+This is hackathon code. For production:
+
+| Task | Done |
+|------|------|
+| Enable RLS on all Supabase tables | [ ] |
+| Validate inputs server-side | [ ] |
+| Rate limit the API | [ ] |
+| Don't commit credentials | [ ] |
+| Set up proper CORS | [ ] |
+| Audit auth events | [ ] |
+
+---
+
+## 12. License
+
+MIT. Built for Lifelines 2026.

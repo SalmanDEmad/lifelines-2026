@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Alert, RefreshControl } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Box,
   Text,
@@ -29,7 +30,85 @@ import { useAuth } from '../context/AuthContext';
 import { Report } from '../utils/database';
 import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryIcon, getStatusColor, getStatusIcon, Icons, ICON_SIZES } from '../design';
 import OfflineMap from '../components/OfflineMap';
-import { List, Map } from 'lucide-react-native';
+import { List, Map, Navigation2 } from 'lucide-react-native';
+import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
+
+// Demo reports data for all regions
+const DEMO_REPORTS_BY_REGION: Record<string, Array<{ zone: string; category: string; lat: number; lng: number; description: string }>> = {
+  palestine: [
+    { zone: 'Gaza City', category: 'rubble', lat: 31.5150, lng: 34.4500, description: 'Collapsed residential building - 3 floors' },
+    { zone: 'Gaza City', category: 'hazard', lat: 31.5080, lng: 34.4650, description: 'Unexploded ordnance reported near school' },
+    { zone: 'Gaza City', category: 'blocked_road', lat: 31.5200, lng: 34.4400, description: 'Main road blocked by debris' },
+    { zone: 'North Gaza', category: 'rubble', lat: 31.5500, lng: 34.4900, description: 'Multiple buildings collapsed in Beit Hanoun' },
+    { zone: 'North Gaza', category: 'hazard', lat: 31.5600, lng: 34.4700, description: 'Gas leak from damaged infrastructure' },
+    { zone: 'Central Gaza', category: 'rubble', lat: 31.4600, lng: 34.4400, description: 'Hospital partially collapsed' },
+    { zone: 'Central Gaza', category: 'blocked_road', lat: 31.4700, lng: 34.4500, description: 'Road to Nuseirat camp blocked' },
+    { zone: 'Khan Younis', category: 'rubble', lat: 31.3500, lng: 34.3000, description: 'Market area heavily damaged' },
+    { zone: 'Khan Younis', category: 'hazard', lat: 31.3600, lng: 34.3200, description: 'Downed power lines - danger of electrocution' },
+    { zone: 'Rafah', category: 'rubble', lat: 31.2800, lng: 34.2500, description: 'Border crossing area damaged' },
+    { zone: 'Rafah', category: 'blocked_road', lat: 31.2900, lng: 34.2600, description: 'Evacuation route blocked by rubble' },
+  ],
+  sudan: [
+    { zone: 'Khartoum', category: 'rubble', lat: 15.5900, lng: 32.5400, description: 'Government building collapsed from shelling' },
+    { zone: 'Khartoum', category: 'hazard', lat: 15.5700, lng: 32.5200, description: 'Armed conflict zone - avoid area' },
+    { zone: 'Khartoum', category: 'blocked_road', lat: 15.6000, lng: 32.5500, description: 'Bridge destroyed by airstrikes' },
+    { zone: 'Omdurman', category: 'rubble', lat: 15.6500, lng: 32.4800, description: 'Residential area severely damaged' },
+    { zone: 'Omdurman', category: 'hazard', lat: 15.6700, lng: 32.4600, description: 'Unexploded artillery shells reported' },
+    { zone: 'Darfur', category: 'rubble', lat: 13.5000, lng: 25.0000, description: 'Village destroyed - mass displacement' },
+  ],
+  yemen: [
+    { zone: 'Sanaa', category: 'rubble', lat: 15.3700, lng: 44.1900, description: 'Historic old city buildings damaged' },
+    { zone: 'Sanaa', category: 'hazard', lat: 15.3500, lng: 44.2100, description: 'Hospital without power - medical emergency' },
+    { zone: 'Sanaa', category: 'blocked_road', lat: 15.4000, lng: 44.2000, description: 'Main highway blocked by crater' },
+    { zone: 'Aden', category: 'rubble', lat: 12.8000, lng: 45.0000, description: 'Port facilities heavily damaged' },
+    { zone: 'Aden', category: 'hazard', lat: 12.7800, lng: 45.0200, description: 'Water treatment plant destroyed' },
+    { zone: 'Taiz', category: 'rubble', lat: 13.5800, lng: 44.0500, description: 'City center in ruins from siege' },
+  ],
+  syria: [
+    { zone: 'Aleppo', category: 'rubble', lat: 36.2000, lng: 37.1500, description: 'Historic souk completely destroyed' },
+    { zone: 'Aleppo', category: 'hazard', lat: 36.1800, lng: 37.1700, description: 'Chemical contamination suspected' },
+    { zone: 'Aleppo', category: 'blocked_road', lat: 36.2200, lng: 37.1300, description: 'Major intersection impassable' },
+    { zone: 'Damascus', category: 'rubble', lat: 33.5200, lng: 36.3000, description: 'Suburb heavily bombed' },
+    { zone: 'Damascus', category: 'hazard', lat: 33.5100, lng: 36.2800, description: 'Sniper activity reported' },
+    { zone: 'Idlib', category: 'rubble', lat: 35.9500, lng: 36.6500, description: 'Last hospital in area destroyed' },
+  ],
+  ukraine: [
+    { zone: 'Kyiv', category: 'rubble', lat: 50.4500, lng: 30.5200, description: 'Apartment complex hit by missile' },
+    { zone: 'Kyiv', category: 'hazard', lat: 50.4300, lng: 30.5500, description: 'Unexploded missile in residential area' },
+    { zone: 'Kyiv', category: 'blocked_road', lat: 50.4700, lng: 30.4800, description: 'Metro station entrance blocked' },
+    { zone: 'Kharkiv', category: 'rubble', lat: 50.0000, lng: 36.2500, description: 'University building destroyed' },
+    { zone: 'Kharkiv', category: 'hazard', lat: 49.9800, lng: 36.3000, description: 'Gas main ruptured' },
+    { zone: 'Mariupol', category: 'rubble', lat: 47.1000, lng: 37.5500, description: 'Theater shelter destroyed - civilians trapped' },
+    { zone: 'Mariupol', category: 'hazard', lat: 47.0800, lng: 37.5700, description: 'Steel plant contamination zone' },
+    { zone: 'Donetsk', category: 'rubble', lat: 48.0200, lng: 37.8000, description: 'Train station bombed' },
+    { zone: 'Bakhmut', category: 'rubble', lat: 48.6000, lng: 38.0000, description: 'City center completely leveled' },
+    { zone: 'Bakhmut', category: 'blocked_road', lat: 48.5800, lng: 38.0200, description: 'All roads heavily mined' },
+  ],
+  afghanistan: [
+    { zone: 'Kabul', category: 'rubble', lat: 34.5200, lng: 69.1700, description: 'Mosque destroyed in explosion' },
+    { zone: 'Kabul', category: 'hazard', lat: 34.5000, lng: 69.2000, description: 'IED suspected near market' },
+    { zone: 'Kabul', category: 'blocked_road', lat: 34.5400, lng: 69.1500, description: 'Security checkpoint blocking traffic' },
+    { zone: 'Kandahar', category: 'rubble', lat: 31.6200, lng: 65.7200, description: 'Airstrike damage to civilian homes' },
+    { zone: 'Kandahar', category: 'hazard', lat: 31.6000, lng: 65.7000, description: 'Taliban activity - avoid area' },
+    { zone: 'Herat', category: 'rubble', lat: 34.3700, lng: 62.2200, description: 'Historic citadel partially collapsed' },
+    { zone: 'Mazar-i-Sharif', category: 'rubble', lat: 36.7200, lng: 67.1200, description: 'Shrine complex damaged by fighting' },
+  ],
+  lebanon: [
+    { zone: 'Beirut', category: 'rubble', lat: 33.8900, lng: 35.5000, description: 'Port explosion aftermath - buildings unstable' },
+    { zone: 'Beirut', category: 'hazard', lat: 33.8700, lng: 35.5200, description: 'Toxic chemical residue from port blast' },
+    { zone: 'Beirut', category: 'blocked_road', lat: 33.9100, lng: 35.4800, description: 'Highway blocked by protests' },
+    { zone: 'Tripoli', category: 'rubble', lat: 34.4400, lng: 35.8500, description: 'Old city buildings collapsing' },
+    { zone: 'South Lebanon', category: 'hazard', lat: 33.2000, lng: 35.3000, description: 'Border conflict zone - active shelling' },
+    { zone: 'South Lebanon', category: 'rubble', lat: 33.1500, lng: 35.4000, description: 'Village destroyed by airstrikes' },
+  ],
+  somalia: [
+    { zone: 'Mogadishu', category: 'rubble', lat: 2.0500, lng: 45.3500, description: 'Market destroyed by car bomb' },
+    { zone: 'Mogadishu', category: 'hazard', lat: 2.0300, lng: 45.3700, description: 'Al-Shabaab controlled area' },
+    { zone: 'Mogadishu', category: 'blocked_road', lat: 2.0700, lng: 45.3300, description: 'Military checkpoint - long delays' },
+    { zone: 'Kismayo', category: 'rubble', lat: -0.3500, lng: 42.5500, description: 'Port facilities damaged' },
+    { zone: 'Baidoa', category: 'hazard', lat: 3.1500, lng: 43.6500, description: 'Drought zone - famine conditions' },
+  ],
+};
 
 const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -52,25 +131,69 @@ const MapScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('map');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string>(DEFAULT_REGION);
+  const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [demoDataLoaded, setDemoDataLoaded] = useState(false);
+  const mapRef = React.useRef<any>(null);
 
   const localReports = useReportStore((state) => state.localReports);
   const unsyncedCount = useReportStore((state) => state.unsyncedCount);
   const loadReportsFromDB = useReportStore((state) => state.loadReportsFromDB);
-  const deleteLocalReport = useReportStore((state) => state.deleteLocalReport);
   const { t } = useTranslation();
   const { user, userRole } = useAuth();
 
-  // Filter reports based on user role
+  // Load selected region on mount
+  useEffect(() => {
+    const loadRegion = async () => {
+      const storedRegion = await AsyncStorage.getItem('selected_region');
+      console.log('MapScreen: Loaded region from storage:', storedRegion || 'none (using default)');
+      if (storedRegion) {
+        setSelectedRegion(storedRegion.toLowerCase().trim());
+      }
+      // Check if demo data was already loaded
+      const demoLoaded = await AsyncStorage.getItem('demo_data_loaded');
+      if (demoLoaded === 'true') {
+        setDemoDataLoaded(true);
+      }
+    };
+    loadRegion();
+  }, []);
+
+  // Get zones for the selected region
+  const regionZones = React.useMemo(() => {
+    return getZonesByRegion(selectedRegion).map(z => z.name);
+  }, [selectedRegion]);
+
+  // Filter reports based on user role AND selected region
   const filteredReports = React.useMemo(() => {
+    console.log('Filtering reports:', { localReportsCount: localReports.length, userRole, userId: user?.id, region: selectedRegion, availableZones: regionZones });
+    
+    // Filter by region first - only show reports from zones in the selected region
+    const regionFilteredReports = localReports.filter(report => {
+      const isInZone = regionZones.includes(report.zone);
+      if (!isInZone) {
+        console.log('Report', report.id, 'zone:', report.zone, 'not in available zones:', regionZones);
+      }
+      return isInZone;
+    });
+    
+    console.log('Reports after region filter:', regionFilteredReports.length, 'out of', localReports.length);
+    
+    // For now, show all reports in region regardless of role (for testing)
+    return regionFilteredReports;
+    
+    // Commented out for testing - uncomment when auth is fully set up
+    /*
     if (userRole === 'ngo') {
-      // NGOs see all reports
-      return localReports;
+      // NGOs see all reports in region
+      return regionFilteredReports;
     }
     // Citizens only see their own reports
-    return localReports.filter(report => report.user_id === user?.id);
-  }, [localReports, userRole, user]);
+    return regionFilteredReports.filter(report => report.user_id === user?.id);
+    */
+  }, [localReports, userRole, user, regionZones, selectedRegion]);
 
   useEffect(() => {
     console.log('MapScreen mounted');
@@ -83,6 +206,39 @@ const MapScreen = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const addLocalReport = useReportStore((state) => state.addLocalReport);
+
+  const createDemoReports = async () => {
+    // Get demo reports for the currently selected region
+    const regionData = DEMO_REPORTS_BY_REGION[selectedRegion] || DEMO_REPORTS_BY_REGION.palestine;
+    const regionConfig = getRegionConfig(selectedRegion);
+    
+    const demoReports: Array<Omit<Report, 'id' | 'synced'>> = regionData.map((report, index) => ({
+      zone: report.zone,
+      category: report.category as 'rubble' | 'hazard' | 'blocked_road',
+      latitude: report.lat,
+      longitude: report.lng,
+      description: report.description,
+      timestamp: Date.now() - (index * 60000), // Stagger timestamps
+    }));
+
+    console.log('Creating', demoReports.length, 'demo reports for region:', selectedRegion);
+    let created = 0;
+    for (const report of demoReports) {
+      try {
+        await addLocalReport(report);
+        created++;
+      } catch (error) {
+        console.log('Error creating demo report:', error);
+      }
+    }
+    console.log('Created', created, 'demo reports');
+    // Mark demo data as loaded and persist
+    setDemoDataLoaded(true);
+    await AsyncStorage.setItem('demo_data_loaded', 'true');
+    Alert.alert('Demo Data Created', `Added ${created} sample hazard reports for ${regionConfig.name}`);
+  };
 
   const getUserLocation = async () => {
     try {
@@ -106,28 +262,6 @@ const MapScreen = () => {
     } finally {
       setRefreshing(false);
     }
-  };
-
-  const handleDeleteReport = (reportId: string) => {
-    Alert.alert(
-      t('map.deleteConfirm'),
-      t('map.deleteConfirmMsg'),
-      [
-        { text: t('map.cancel'), onPress: () => {} },
-        {
-          text: t('map.delete'),
-          onPress: async () => {
-            try {
-              await deleteLocalReport(reportId);
-              setModalVisible(false);
-            } catch (error) {
-              Alert.alert(t('map.deleteError'));
-            }
-          },
-          style: 'destructive',
-        },
-      ]
-    );
   };
 
   // Reusable Components
@@ -376,19 +510,42 @@ const MapScreen = () => {
             </VStack>
           </ModalBody>
           <ModalFooter borderTopWidth={1} borderTopColor={COLORS.borderLight} pt={SPACING.base}>
-            <HStack space="sm" w="100%">
-              <PrimaryButton
-                onPress={() => selectedReport.id && handleDeleteReport(selectedReport.id)}
-                label={t('map.delete')}
-                variant="danger"
-                IconComponent={Icons.Delete}
-              />
-              <PrimaryButton
-                onPress={() => setModalVisible(false)}
-                label={t('map.close')}
-                variant="secondary"
-              />
-            </HStack>
+            <VStack space="sm" w="100%">
+              {/* Go to Location Button */}
+              <Pressable
+                bg={COLORS.primary}
+                borderRadius={RADII.md}
+                py={SPACING.md}
+                px={SPACING.lg}
+                justifyContent="center"
+                alignItems="center"
+                onPress={() => {
+                  if (selectedReport) {
+                    setFlyToLocation({ lat: selectedReport.latitude, lng: selectedReport.longitude });
+                    setViewMode('map');
+                    setModalVisible(false);
+                  }
+                }}
+                style={SHADOWS.sm}
+              >
+                <HStack space="sm" alignItems="center">
+                  <Navigation2 size={18} color={COLORS.white} />
+                  <Text fontSize={14} color={COLORS.white} fontWeight="600">
+                    Go to Location
+                  </Text>
+                </HStack>
+              </Pressable>
+              
+              <HStack space="sm" w="100%">
+                <Box flex={1}>
+                  <PrimaryButton
+                    onPress={() => setModalVisible(false)}
+                    label={t('map.close')}
+                    variant="secondary"
+                  />
+                </Box>
+              </HStack>
+            </VStack>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -396,15 +553,33 @@ const MapScreen = () => {
   };
 
   const emptyListComponent = () => (
-    <Box flex={1} justifyContent="center" alignItems="center" py={SPACING['3xl']}>
+    <Box flex={1} justifyContent="center" alignItems="center" py={SPACING['3xl']} px={SPACING.lg}>
       <VStack space="md" alignItems="center">
         <Icons.Empty size={64} color={COLORS.textMuted} />
-        <Heading fontSize={20} color={COLORS.text}>
+        <Heading fontSize={20} color={COLORS.text} textAlign="center">
           {t('map.noReports')}
         </Heading>
-        <Text fontSize={14} color={COLORS.textSecondary} textAlign="center" px={SPACING.xl}>
+        <Text fontSize={14} color={COLORS.textSecondary} textAlign="center" px={SPACING.lg}>
           {t('map.noReportsText')}
         </Text>
+        
+        {/* Demo Reports Button - only show if demo data not loaded */}
+        {!demoDataLoaded && (
+          <Pressable
+            onPress={createDemoReports}
+            style={{
+              marginTop: SPACING.lg,
+              backgroundColor: COLORS.primary,
+              paddingHorizontal: SPACING.lg,
+              paddingVertical: SPACING.md,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: '600', fontSize: 14 }}>
+              Load Demo Reports
+            </Text>
+          </Pressable>
+        )}
       </VStack>
     </Box>
   );
@@ -467,24 +642,37 @@ const MapScreen = () => {
               </Box>
             </HStack>
           </VStack>
-          {/* View Mode Toggle */}
-          <HStack space="xs" bg={COLORS.surface} borderRadius={RADII.md} p={4}>
-            <Pressable
-              onPress={() => setViewMode('list')}
-              bg={viewMode === 'list' ? COLORS.primary : 'transparent'}
-              borderRadius={RADII.sm}
-              p={SPACING.sm}
-            >
-              <List size={18} color={viewMode === 'list' ? COLORS.white : COLORS.textSecondary} />
-            </Pressable>
-            <Pressable
-              onPress={() => setViewMode('map')}
-              bg={viewMode === 'map' ? COLORS.primary : 'transparent'}
-              borderRadius={RADII.sm}
-              p={SPACING.sm}
-            >
-              <Map size={18} color={viewMode === 'map' ? COLORS.white : COLORS.textSecondary} />
-            </Pressable>
+          {/* View Mode Toggle + Demo Button */}
+          <HStack space="sm" alignItems="center">
+            {/* Demo Data Button - only show if demo data not loaded */}
+            {!demoDataLoaded && (
+              <Pressable
+                onPress={createDemoReports}
+                bg={COLORS.success}
+                borderRadius={RADII.md}
+                p={SPACING.sm}
+              >
+                <Text style={{ color: COLORS.white, fontWeight: '600', fontSize: 12 }}>+ Demo</Text>
+              </Pressable>
+            )}
+            <HStack space="xs" bg={COLORS.surface} borderRadius={RADII.md} p={4}>
+              <Pressable
+                onPress={() => setViewMode('list')}
+                bg={viewMode === 'list' ? COLORS.primary : 'transparent'}
+                borderRadius={RADII.sm}
+                p={SPACING.sm}
+              >
+                <List size={18} color={viewMode === 'list' ? COLORS.white : COLORS.textSecondary} />
+              </Pressable>
+              <Pressable
+                onPress={() => setViewMode('map')}
+                bg={viewMode === 'map' ? COLORS.primary : 'transparent'}
+                borderRadius={RADII.sm}
+                p={SPACING.sm}
+              >
+                <Map size={18} color={viewMode === 'map' ? COLORS.white : COLORS.textSecondary} />
+              </Pressable>
+            </HStack>
           </HStack>
         </HStack>
       </Box>
@@ -514,6 +702,9 @@ const MapScreen = () => {
           <OfflineMap
             reports={filteredReports}
             userLocation={userLocation}
+            regionKey={selectedRegion}
+            flyToLocation={flyToLocation}
+            onFlyComplete={() => setFlyToLocation(null)}
             onReportPress={(report) => {
               setSelectedReport(report);
               setModalVisible(true);

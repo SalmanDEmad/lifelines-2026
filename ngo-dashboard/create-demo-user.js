@@ -54,7 +54,7 @@ async function createDemoUser() {
     }
   }
 
-  console.log('\n✅ Demo NGO Account Created!');
+  console.log('\n[SUCCESS] Demo NGO Account Created!');
   console.log('================================');
   console.log('Email: ngo@lifelines.app');
   console.log('Password: demo1234');

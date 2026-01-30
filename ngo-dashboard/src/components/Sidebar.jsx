@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, LogOut, Truck } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Truck, BarChart3, Download } from 'lucide-react';
 
-export default function Sidebar({ onSignOut }) {
+export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -42,14 +42,15 @@ export default function Sidebar({ onSignOut }) {
           <Users size={20} />
           Teams
         </NavLink>
+
+        <NavLink 
+          to="/analytics" 
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <BarChart3 size={20} />
+          Analytics
+        </NavLink>
       </nav>
-      
-      <div style={{ marginTop: 'auto', padding: '20px 0' }}>
-        <button className="nav-item" onClick={onSignOut}>
-          <LogOut size={20} />
-          Sign Out
-        </button>
-      </div>
     </aside>
   );
 }

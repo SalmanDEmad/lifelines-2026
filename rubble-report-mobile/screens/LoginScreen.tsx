@@ -9,10 +9,11 @@ import { useTranslation, Language } from '../utils/i18n';
 import { COLORS, SIZES } from '../styles';
 
 interface LoginScreenProps {
-  onNavigateToSignup: () => void;
+  onNavigateToSignup?: () => void;
+  onSkip?: () => void;
 }
 
-export default function LoginScreen({ onNavigateToSignup }: LoginScreenProps) {
+export default function LoginScreen({ onNavigateToSignup, onSkip }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -119,18 +120,32 @@ export default function LoginScreen({ onNavigateToSignup }: LoginScreenProps) {
             </ButtonText>
           </Button>
 
-          <TouchableOpacity 
-            onPress={onNavigateToSignup}
-            style={styles.signupLink}
-            disabled={loading}
-          >
-            <Text style={styles.signupText}>
-              {t('auth.noAccount')}{' '}
-              <Text style={styles.signupTextBold}>
-                {t('auth.signUp')}
+          {onSkip && (
+            <TouchableOpacity 
+              onPress={onSkip}
+              style={styles.skipButton}
+              disabled={loading}
+            >
+              <Text style={styles.skipText}>
+                {t('auth.skipLogin') || 'Continue Without Login'}
               </Text>
-            </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )}
+
+          {onNavigateToSignup && (
+            <TouchableOpacity 
+              onPress={onNavigateToSignup}
+              style={styles.signupLink}
+              disabled={loading}
+            >
+              <Text style={styles.signupText}>
+                {t('auth.noAccount')}{' '}
+                <Text style={styles.signupTextBold}>
+                  {t('auth.signUp')}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          )}
         </Box>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -175,6 +190,19 @@ const styles = StyleSheet.create({
   loginButton: {
     marginTop: 8,
     backgroundColor: COLORS.primary,
+  },
+  skipButton: {
+    alignItems: 'center',
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  skipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   signupLink: {
     alignItems: 'center',

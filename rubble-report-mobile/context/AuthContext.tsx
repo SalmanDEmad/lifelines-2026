@@ -140,14 +140,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select();
 
       if (profileError) {
-        console.error('❌ Profile creation failed:', profileError);
+        console.error('[ERROR] Profile creation failed:', profileError);
         console.error('Error code:', profileError.code);
         console.error('Error message:', profileError.message);
         console.error('Error details:', profileError.details);
         
         // Don't throw - let user continue
       } else {
-        console.log('✅ User profile created successfully:', profileData);
+        console.log('[SUCCESS] User profile created successfully:', profileData);
         // Set the role immediately after successful creation
         setUserRole(role);
       }
