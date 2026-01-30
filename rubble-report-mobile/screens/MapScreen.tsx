@@ -32,6 +32,7 @@ import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryI
 import OfflineMap from '../components/OfflineMap';
 import { List, Map, Navigation2 } from 'lucide-react-native';
 import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
+import { supabase } from '../utils/supabase';
 
 // Demo reports data for all regions
 const DEMO_REPORTS_BY_REGION: Record<string, Array<{ zone: string; category: string; lat: number; lng: number; description: string }>> = {
@@ -218,7 +219,7 @@ const MapScreen = () => {
 
   // Load vote stats when a report is selected
   useEffect(() => {
-    if (selectedReport && modalVisible) {
+    if (selectedReport && modalVisible && selectedReport.id) {
       loadVoteStats(selectedReport.id);
     }
   }, [selectedReport, modalVisible]);
@@ -248,9 +249,9 @@ const MapScreen = () => {
 
       const voteArray = votes || [];
       const totalVotes = voteArray.length;
-      const accurateVotes = voteArray.filter(v => v.vote_type === 'accurate').length;
-      const inaccurateVotes = voteArray.filter(v => v.vote_type === 'inaccurate').length;
-      const unclearVotes = voteArray.filter(v => v.vote_type === 'unclear').length;
+      const accurateVotes = voteArray.filter((v: any) => v.vote_type === 'accurate').length;
+      const inaccurateVotes = voteArray.filter((v: any) => v.vote_type === 'inaccurate').length;
+      const unclearVotes = voteArray.filter((v: any) => v.vote_type === 'unclear').length;
 
       const accuracyPercentage = totalVotes > 0 
         ? Math.round((accurateVotes / totalVotes) * 100) 
@@ -320,7 +321,7 @@ const MapScreen = () => {
         .from('report_votes')
         .upsert(
           {
-            report_id: selectedReport.id,
+            report_id: selectedReport.id!,
             user_id: user.user.id,
             vote_type: voteType,
           },
@@ -338,7 +339,9 @@ const MapScreen = () => {
       setUserVote(voteType);
       
       // Reload vote stats
-      await loadVoteStats(selectedReport.id);
+      if (selectedReport.id) {
+        await loadVoteStats(selectedReport.id);
+      }
       
       Alert.alert('Vote Submitted', 'Your vote on report accuracy has been recorded.');
       setVotingLoading(false);
