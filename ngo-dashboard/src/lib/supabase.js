@@ -165,3 +165,138 @@ export const authApi = {
     return data?.role;
   }
 };
+
+// Voting API - Consensus system for report verification
+export const votingApi = {
+  async getVoteStats(reportId) {
+    console.log('[INFO] getVoteStats() called for report:', reportId);
+    const { data, error } = await supabase
+      .from('report_votes')
+      .select('vote_type')
+      .eq('report_id', reportId);
+    
+    if (error) {
+      console.error('[ERROR] Error fetching votes:', error);
+      return {
+        totalVotes: 0,
+        accurateVotes: 0,
+        inaccurateVotes: 0,
+        unclearVotes: 0,
+        accuracyPercentage: 0,
+      };
+    }
+
+    const votes = data || [];
+    const totalVotes = votes.length;
+    const accurateVotes = votes.filter(v => v.vote_type === 'accurate').length;
+    const inaccurateVotes = votes.filter(v => v.vote_type === 'inaccurate').length;
+    const unclearVotes = votes.filter(v => v.vote_type === 'unclear').length;
+
+    const accuracyPercentage = totalVotes > 0 
+      ? Math.round((accurateVotes / totalVotes) * 100) 
+      : 0;
+
+    const stats = {
+      reportId,
+      totalVotes,
+      accurateVotes,
+      inaccurateVotes,
+      unclearVotes,
+      accuracyPercentage,
+    };
+
+    console.log('[SUCCESS] Vote stats:', stats);
+    return stats;
+  },
+
+  async submitVote(reportId, voteType) {
+    console.log('[INFO] submitVote() called:', { reportId, voteType });
+    
+    if (!['accurate', 'inaccurate', 'unclear'].includes(voteType)) {
+      throw new Error('Invalid vote type');
+    }
+
+    // Get current session to check if user is authenticated
+    const session = await authApi.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      console.warn('[WARN] No authenticated user, storing vote locally');
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('report_votes')
+      .upsert(
+        {
+          report_id: reportId,
+          user_id: userId,
+          vote_type: voteType,
+        },
+        { onConflict: 'report_id,user_id' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[ERROR] Error submitting vote:', error);
+      throw error;
+    }
+
+    console.log('[SUCCESS] Vote submitted:', data);
+    return data;
+  },
+
+  async deleteVote(reportId) {
+    console.log('[INFO] deleteVote() called for report:', reportId);
+    
+    const session = await authApi.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      throw new Error('Must be authenticated to delete vote');
+    }
+
+    const { error } = await supabase
+      .from('report_votes')
+      .delete()
+      .eq('report_id', reportId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('[ERROR] Error deleting vote:', error);
+      throw error;
+    }
+
+    console.log('[SUCCESS] Vote deleted');
+  },
+
+  async getUserVote(reportId) {
+    console.log('[INFO] getUserVote() called for report:', reportId);
+    
+    const session = await authApi.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      console.log('[INFO] No authenticated user');
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('report_votes')
+      .select('vote_type, created_at')
+      .eq('report_id', reportId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is expected
+      console.error('[ERROR] Error fetching user vote:', error);
+      return null;
+    }
+
+    console.log('[SUCCESS] User vote:', data);
+    return data || null;
+  }
+};
+

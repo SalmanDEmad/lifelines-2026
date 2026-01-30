@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Trash2, Eye, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { reportsApi } from '../lib/supabase';
+import { reportsApi, votingApi } from '../lib/supabase';
+import { getTwemojiUrl, VOTE_EMOJIS } from '../lib/emoji';
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [voteStats, setVoteStats] = useState(null);
+  const [votesLoading, setVotesLoading] = useState(false);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -36,6 +39,19 @@ export default function Reports() {
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Failed to update status');
+    }
+  };
+
+  const loadVotingStats = async (reportId) => {
+    try {
+      setVotesLoading(true);
+      const stats = await votingApi.getVoteStats(reportId);
+      setVoteStats(stats);
+    } catch (error) {
+      console.error('Error loading vote stats:', error);
+      setVoteStats(null);
+    } finally {
+      setVotesLoading(false);
     }
   };
 
@@ -143,7 +159,10 @@ export default function Reports() {
                     <div className="action-buttons">
                       <button 
                         className="btn btn-sm btn-secondary"
-                        onClick={() => setSelectedReport(report)}
+                        onClick={() => {
+                          setSelectedReport(report);
+                          loadVotingStats(report.id);
+                        }}
                       >
                         <Eye size={14} />
                       </button>
@@ -233,6 +252,118 @@ export default function Reports() {
                     onClick={(s) => handleStatusChange(selectedReport.id, s)}
                   />
                 </div>
+              </div>
+
+              {/* Community Consensus / Voting Section */}
+              <div className="form-group">
+                <label>
+                  <img 
+                    src={getTwemojiUrl('🗳️')} 
+                    alt="vote" 
+                    style={{ width: '1.2em', height: '1.2em', marginRight: '6px', verticalAlign: 'middle' }}
+                  />
+                  Community Consensus
+                </label>
+                {votesLoading ? (
+                  <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
+                    Loading votes...
+                  </div>
+                ) : voteStats ? (
+                  <div style={{ 
+                    background: '#f5f5f5', 
+                    padding: '12px', 
+                    borderRadius: '6px',
+                    marginTop: '8px'
+                  }}>
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong style={{ display: 'block', marginBottom: '6px' }}>
+                        {voteStats.totalVotes} {voteStats.totalVotes === 1 ? 'vote' : 'votes'}
+                      </strong>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ minWidth: '70px', fontSize: '12px', color: '#666' }}>
+                          Accuracy:
+                        </span>
+                        <div style={{
+                          flex: 1,
+                          height: '24px',
+                          background: '#e5e5e5',
+                          borderRadius: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            width: `${Math.max(voteStats.accuracyPercentage, 5)}%`,
+                            background: '#10B981',
+                            transition: 'width 0.3s ease'
+                          }} />
+                        </div>
+                        <span style={{ minWidth: '35px', textAlign: 'right', fontWeight: 'bold' }}>
+                          {voteStats.accuracyPercentage}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Vote Breakdown with Twemoji */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr 1fr',
+                      gap: '8px',
+                      fontSize: '12px'
+                    }}>
+                      <div style={{
+                        padding: '8px',
+                        background: '#e0ffe0',
+                        borderRadius: '4px',
+                        textAlign: 'center'
+                      }}>
+                        <img 
+                          src={getTwemojiUrl(VOTE_EMOJIS.accurate)} 
+                          alt="accurate" 
+                          style={{ width: '1.4em', height: '1.4em', marginBottom: '4px', display: 'block', margin: '0 auto 4px' }}
+                        />
+                        <strong>{voteStats.accurateVotes}</strong>
+                        <div style={{ fontSize: '10px', color: '#666' }}>Accurate</div>
+                      </div>
+                      <div style={{
+                        padding: '8px',
+                        background: '#ffe0e0',
+                        borderRadius: '4px',
+                        textAlign: 'center'
+                      }}>
+                        <img 
+                          src={getTwemojiUrl(VOTE_EMOJIS.inaccurate)} 
+                          alt="inaccurate" 
+                          style={{ width: '1.4em', height: '1.4em', marginBottom: '4px', display: 'block', margin: '0 auto 4px' }}
+                        />
+                        <strong>{voteStats.inaccurateVotes}</strong>
+                        <div style={{ fontSize: '10px', color: '#666' }}>Inaccurate</div>
+                      </div>
+                      <div style={{
+                        padding: '8px',
+                        background: '#fff8e0',
+                        borderRadius: '4px',
+                        textAlign: 'center'
+                      }}>
+                        <img 
+                          src={getTwemojiUrl(VOTE_EMOJIS.unclear)} 
+                          alt="unclear" 
+                          style={{ width: '1.4em', height: '1.4em', marginBottom: '4px', display: 'block', margin: '0 auto 4px' }}
+                        />
+                        <strong>{voteStats.unclearVotes}</strong>
+                        <div style={{ fontSize: '10px', color: '#666' }}>Unclear</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
+                    No votes yet
+                  </div>
+                )}
               </div>
             </div>
             <div className="modal-footer">

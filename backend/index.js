@@ -23,6 +23,42 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// COMMENTED OUT: Rate Limiting Middleware
+// Uncomment to enable rate limiting for production
+// This prevents abuse from single IP addresses by limiting requests per time window
+/*
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter configuration
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minute window
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Specific rate limiters for different endpoints
+const reportLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 10, // Limit each IP to 10 reports per minute
+  message: 'Too many reports submitted, please try again later.',
+});
+
+const voteLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 30, // Limit each IP to 30 votes per minute
+  message: 'Too many votes submitted, please try again later.',
+});
+
+// Apply global rate limiter to all routes
+app.use(limiter);
+
+// Apply specific rate limiters to endpoints (uncomment when enabled)
+// app.post('/api/reports', reportLimiter, authenticateUser, async (req, res) => { ... });
+// app.post('/api/reports/:id/vote', voteLimiter, authenticateUser, async (req, res) => { ... });
+*/
+
 // Auth middleware
 const authenticateUser = async (req, res, next) => {
   try {
@@ -200,6 +236,157 @@ app.patch('/api/reports/:id', async (req, res) => {
   }
 });
 
+// POST /api/reports/:id/vote - Submit or update a vote on a report accuracy
+app.post('/api/reports/:id/vote', authenticateUser, async (req, res) => {
+  try {
+    const { id: reportId } = req.params;
+    const { voteType } = req.body;
+    const userId = req.user.id;
+
+    // Validate vote type
+    if (!['accurate', 'inaccurate', 'unclear'].includes(voteType)) {
+      return res.status(400).json({ error: 'Invalid vote type. Must be one of: accurate, inaccurate, unclear' });
+    }
+
+    // Check if report exists
+    const { data: report, error: reportError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('id', reportId)
+      .single();
+
+    if (reportError || !report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // Upsert vote (insert or update if user already voted)
+    const { data: vote, error: voteError } = await supabase
+      .from('report_votes')
+      .upsert(
+        {
+          report_id: reportId,
+          user_id: userId,
+          vote_type: voteType,
+        },
+        { onConflict: 'report_id,user_id' }
+      )
+      .select();
+
+    if (voteError) {
+      console.error('Vote submission error:', voteError);
+      return res.status(500).json({ error: voteError.message });
+    }
+
+    console.log(`Vote submitted: User ${userId} voted ${voteType} on report ${reportId}`);
+    res.status(201).json({ success: true, vote: vote[0] });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/reports/:id/votes - Get vote statistics for a report
+app.get('/api/reports/:id/votes', async (req, res) => {
+  try {
+    const { id: reportId } = req.params;
+
+    // Get all votes for the report
+    const { data: votes, error: votesError } = await supabase
+      .from('report_votes')
+      .select('vote_type')
+      .eq('report_id', reportId);
+
+    if (votesError) {
+      console.error('Database error:', votesError);
+      return res.status(500).json({ error: votesError.message });
+    }
+
+    // Calculate statistics
+    const totalVotes = votes.length;
+    const accurateVotes = votes.filter(v => v.vote_type === 'accurate').length;
+    const inaccurateVotes = votes.filter(v => v.vote_type === 'inaccurate').length;
+    const unclearVotes = votes.filter(v => v.vote_type === 'unclear').length;
+
+    const accuracyPercentage = totalVotes > 0 
+      ? Math.round((accurateVotes / totalVotes) * 100) 
+      : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        reportId,
+        totalVotes,
+        accurateVotes,
+        inaccurateVotes,
+        unclearVotes,
+        accuracyPercentage,
+      }
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/reports/:id/user-vote - Get current user's vote on a report
+app.get('/api/reports/:id/user-vote', authenticateUser, async (req, res) => {
+  try {
+    const { id: reportId } = req.params;
+    const userId = req.user.id;
+
+    const { data: vote, error: voteError } = await supabase
+      .from('report_votes')
+      .select('vote_type, created_at')
+      .eq('report_id', reportId)
+      .eq('user_id', userId)
+      .single();
+
+    if (voteError && voteError.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is expected if user hasn't voted
+      console.error('Database error:', voteError);
+      return res.status(500).json({ error: voteError.message });
+    }
+
+    res.json({
+      success: true,
+      vote: vote || null, // null if user hasn't voted
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/reports/:id/vote - Delete a user's vote on a report
+app.delete('/api/reports/:id/vote', authenticateUser, async (req, res) => {
+  try {
+    const { id: reportId } = req.params;
+    const userId = req.user.id;
+
+    const { data, error: deleteError } = await supabase
+      .from('report_votes')
+      .delete()
+      .eq('report_id', reportId)
+      .eq('user_id', userId)
+      .select();
+
+    if (deleteError) {
+      console.error('Vote deletion error:', deleteError);
+      return res.status(500).json({ error: deleteError.message });
+    }
+
+    console.log(`Vote deleted: User ${userId} removed their vote from report ${reportId}`);
+    res.json({ success: true, message: 'Vote deleted successfully' });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Setup demo accounts endpoint
 app.post('/api/setup-demo', async (req, res) => {
   try {
@@ -264,5 +451,10 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`📝 API endpoint: http://localhost:${PORT}/api/reports`);
+  console.log(`🗳️  Voting endpoints:`);
+  console.log(`   POST /api/reports/:id/vote - Submit/update vote`);
+  console.log(`   GET /api/reports/:id/votes - Get vote statistics`);
+  console.log(`   GET /api/reports/:id/user-vote - Get your vote`);
+  console.log(`   DELETE /api/reports/:id/vote - Delete your vote`);
   console.log(`🔧 Demo setup: POST http://localhost:${PORT}/api/setup-demo`);
 });

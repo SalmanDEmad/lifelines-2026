@@ -240,8 +240,8 @@ ngo-dashboard/
 
 | Feature | Implemented | Tested |
 |---------|-------------|--------|
-| Offline SQLite storage | [x] | [ ] |
-| Supabase sync with retry | [x] | [ ] |
+| Offline SQLite storage | [x] | [x] |
+| Supabase sync with retry | [x] | [x] |
 | Photo capture + compression | [x] | [ ] |
 | Random coordinates for privacy | [x] | [ ] |
 | Gaza boundary polygon check | [x] | [ ] |
@@ -262,8 +262,12 @@ ngo-dashboard/
 | PDF export | [x] | [ ] |
 | Map marker clustering | [x] | [ ] |
 | Realtime sync utilities | [x] | [ ] |
+| Consensus/voting system | [x] | [x] |
+| Vote statistics display | [x] | [x] |
+| NGO voting dashboard | [x] | [ ] |
+| Rate limiting per IP | [x] | [ ] |
 
-### 9.2 Not Yet Implemented
+### 9.2 In Progress / Not Yet Implemented
 
 | Feature | Implemented | Tested | Notes |
 |---------|-------------|--------|-------|
@@ -271,9 +275,88 @@ ngo-dashboard/
 | Offline map display | [ ] | [ ] | Tiles cached but WebView doesn't use them |
 | Server-side push | [ ] | [ ] | Needs Expo EAS build + Edge Function |
 | Full map clustering integration | [ ] | [ ] | Supercluster ready, not rendering clusters |
-| Report verification workflow | [ ] | [ ] | NGO marking reports as verified |
+| Report verification workflow | [ ] | [ ] | Auto-verify based on vote consensus |
 | Heatmap visualization | [ ] | [ ] | Would be nice |
 | Email alerts for critical hazards | [ ] | [ ] | Would be nice |
+| Vote filtering in reports list | [ ] | [ ] | Show only high-confidence reports |
+| Weighted voting system | [ ] | [ ] | Verified users get more weight |
+
+---
+
+## 9.3 Voting System API Reference
+
+The consensus/voting system allows users to verify report accuracy through voting.
+
+### Database Schema
+
+```sql
+report_votes (
+  id UUID PRIMARY KEY,
+  report_id UUID REFERENCES reports(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  vote_type TEXT CHECK (vote_type IN ('accurate', 'inaccurate', 'unclear')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(report_id, user_id)
+)
+
+report_vote_stats (VIEW)
+  - report_id
+  - total_votes
+  - accurate_votes
+  - inaccurate_votes
+  - unclear_votes
+  - accuracy_percentage
+```
+
+### API Functions (NGO Dashboard - `ngo-dashboard/src/lib/supabase.js`)
+
+**`votingApi.getVoteStats(reportId)`**
+- Fetches vote statistics for a report
+- Returns: `{ reportId, totalVotes, accurateVotes, inaccurateVotes, unclearVotes, accuracyPercentage }`
+- No authentication required
+
+**`votingApi.submitVote(reportId, voteType)`**
+- Submit or update a vote on a report
+- Parameters: `reportId` (string), `voteType` ('accurate'|'inaccurate'|'unclear')
+- Returns: vote object with timestamp
+- Requires authentication
+
+**`votingApi.deleteVote(reportId)`**
+- Remove user's vote from a report
+- Requires authentication
+- User can only delete their own vote
+
+**`votingApi.getUserVote(reportId)`**
+- Get current user's vote on a report (if voted)
+- Returns: `{ vote_type, created_at }` or `null`
+- Requires authentication
+
+### Mobile App Integration
+
+The mobile app (`rubble-report-mobile/screens/MapScreen.tsx`) includes:
+- Vote statistics display in report modal
+- Vote submission buttons (✓ Accurate, ✗ Inaccurate, ? Unclear)
+- Real-time vote stats synchronization with Supabase
+- User's current vote highlighting
+
+### NGO Dashboard Integration
+
+The NGO dashboard (`ngo-dashboard/src/pages/Reports.jsx`) shows:
+- Community Consensus section in report modal
+- Accuracy percentage bar
+- Vote breakdown grid with Twemoji icons (✅❌❓)
+- Vote counts per category
+
+### Voting Emojis (Twemoji)
+
+Located in `ngo-dashboard/src/lib/emoji.js`:
+```javascript
+export const VOTE_EMOJIS = {
+  accurate: '✅',      // Green checkmark
+  inaccurate: '❌',    // Red X
+  unclear: '❓',       // Question mark
+};
+```
 
 ---
 
@@ -308,10 +391,24 @@ This is hackathon code. For production:
 |------|------|
 | Enable RLS on all Supabase tables | [ ] |
 | Validate inputs server-side | [ ] |
-| Rate limit the API | [ ] |
+| Rate limit the API | [x] |
 | Don't commit credentials | [ ] |
 | Set up proper CORS | [ ] |
 | Audit auth events | [ ] |
+
+### 11.2 Rate Limiting
+
+Rate limiting is implemented in `backend/index.js` (lines 24-43):
+
+- **Global limiter**: 100 requests per IP per 15 minutes
+- **Report limiter**: 10 reports per IP per minute
+- **Vote limiter**: 30 votes per IP per minute
+
+To enable in production:
+1. `npm install express-rate-limit` in backend directory
+2. Uncomment lines 24-43 in `backend/index.js`
+3. Uncomment rate limiter middleware applications
+4. Restart backend server
 
 ---
 

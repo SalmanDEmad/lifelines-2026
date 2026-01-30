@@ -136,6 +136,15 @@ const MapScreen = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>(DEFAULT_REGION);
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [demoDataLoaded, setDemoDataLoaded] = useState(false);
+  const [voteStats, setVoteStats] = useState<{
+    totalVotes: number;
+    accurateVotes: number;
+    inaccurateVotes: number;
+    unclearVotes: number;
+    accuracyPercentage: number;
+  } | null>(null);
+  const [userVote, setUserVote] = useState<string | null>(null);
+  const [votingLoading, setVotingLoading] = useState(false);
   const mapRef = React.useRef<any>(null);
 
   const localReports = useReportStore((state) => state.localReports);
@@ -206,6 +215,139 @@ const MapScreen = () => {
 
     return () => unsubscribe();
   }, []);
+
+  // Load vote stats when a report is selected
+  useEffect(() => {
+    if (selectedReport && modalVisible) {
+      loadVoteStats(selectedReport.id);
+    }
+  }, [selectedReport, modalVisible]);
+
+  const loadVoteStats = async (reportId: string) => {
+    try {
+      setVotingLoading(true);
+      console.log('Loading vote stats for report:', reportId);
+      
+      // TODO: When backend is connected, use this:
+      // const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      // const response = await fetch(`${API_URL}/api/reports/${reportId}/votes`);
+      // const data = await response.json();
+      // setVoteStats(data.stats);
+      
+      // For now, fetch directly from Supabase
+      const { data: votes, error } = await supabase
+        .from('report_votes')
+        .select('vote_type')
+        .eq('report_id', reportId);
+
+      if (error) {
+        console.error('Error fetching votes:', error);
+        setVotingLoading(false);
+        return;
+      }
+
+      const voteArray = votes || [];
+      const totalVotes = voteArray.length;
+      const accurateVotes = voteArray.filter(v => v.vote_type === 'accurate').length;
+      const inaccurateVotes = voteArray.filter(v => v.vote_type === 'inaccurate').length;
+      const unclearVotes = voteArray.filter(v => v.vote_type === 'unclear').length;
+
+      const accuracyPercentage = totalVotes > 0 
+        ? Math.round((accurateVotes / totalVotes) * 100) 
+        : 0;
+
+      setVoteStats({
+        totalVotes,
+        accurateVotes,
+        inaccurateVotes,
+        unclearVotes,
+        accuracyPercentage,
+      });
+
+      // Load user's vote if available
+      const { data: user } = await supabase.auth.getUser();
+      if (user?.user?.id) {
+        const { data: userVoteData } = await supabase
+          .from('report_votes')
+          .select('vote_type')
+          .eq('report_id', reportId)
+          .eq('user_id', user.user.id)
+          .single();
+        
+        if (userVoteData) {
+          setUserVote(userVoteData.vote_type);
+        } else {
+          setUserVote(null);
+        }
+      }
+
+      setVotingLoading(false);
+    } catch (error) {
+      console.error('Error loading vote stats:', error);
+      setVotingLoading(false);
+    }
+  };
+
+  const submitVote = async (voteType: 'accurate' | 'inaccurate' | 'unclear') => {
+    if (!selectedReport) return;
+    
+    try {
+      setVotingLoading(true);
+      console.log('Submitting vote:', voteType, 'for report:', selectedReport.id);
+      
+      // TODO: When backend is connected, use this:
+      // const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      // const token = await getAuthToken();
+      // const response = await fetch(`${API_URL}/api/reports/${selectedReport.id}/vote`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify({ voteType }),
+      // });
+      // const data = await response.json();
+      
+      // For now, use Supabase directly
+      const { data: user } = await supabase.auth.getUser();
+      if (!user?.user?.id) {
+        Alert.alert('Authentication Required', 'You must be logged in to vote.');
+        setVotingLoading(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('report_votes')
+        .upsert(
+          {
+            report_id: selectedReport.id,
+            user_id: user.user.id,
+            vote_type: voteType,
+          },
+          { onConflict: 'report_id,user_id' }
+        );
+
+      if (error) {
+        console.error('Vote submission error:', error);
+        Alert.alert('Error', 'Failed to submit vote. Please try again.');
+        setVotingLoading(false);
+        return;
+      }
+
+      // Update local vote state
+      setUserVote(voteType);
+      
+      // Reload vote stats
+      await loadVoteStats(selectedReport.id);
+      
+      Alert.alert('Vote Submitted', 'Your vote on report accuracy has been recorded.');
+      setVotingLoading(false);
+    } catch (error) {
+      console.error('Error submitting vote:', error);
+      Alert.alert('Error', 'Failed to submit vote. Please try again.');
+      setVotingLoading(false);
+    }
+  };
 
   const addLocalReport = useReportStore((state) => state.addLocalReport);
 
@@ -507,6 +649,131 @@ const MapScreen = () => {
                   </Box>
                 </VStack>
               </HStack>
+
+              {/* Consensus/Voting Section */}
+              <VStack space="sm" py={SPACING.sm}>
+                <Text fontSize={12} color={COLORS.textSecondary} fontWeight="600">
+                  Community Consensus ({voteStats?.totalVotes || 0} votes)
+                </Text>
+                
+                {voteStats && (
+                  <Box bg={COLORS.surface} borderRadius={RADII.md} p={SPACING.md}>
+                    <VStack space="sm">
+                      {/* Accuracy Percentage Bar */}
+                      <HStack space="sm" alignItems="center">
+                        <Text fontSize={12} color={COLORS.text} fontWeight="600">
+                          Accuracy:
+                        </Text>
+                        <Box flex={1} bg={COLORS.borderLight} borderRadius={RADII.sm} h={6} overflow="hidden">
+                          <Box
+                            bg="#10B981"
+                            h="100%"
+                            w={`${Math.max(voteStats.accuracyPercentage, 5)}%`}
+                          />
+                        </Box>
+                        <Text fontSize={12} color={COLORS.text} fontWeight="600">
+                          {voteStats.accuracyPercentage}%
+                        </Text>
+                      </HStack>
+
+                      {/* Vote Breakdown */}
+                      <VStack space="xs" mt={SPACING.sm}>
+                        <HStack space="sm" justifyContent="space-between">
+                          <HStack space="xs">
+                            <Box bg="#10B981" borderRadius={RADII.sm} w={3} h={3} />
+                            <Text fontSize={11} color={COLORS.text}>
+                              Accurate: {voteStats.accurateVotes}
+                            </Text>
+                          </HStack>
+                          <HStack space="xs">
+                            <Box bg="#EF4444" borderRadius={RADII.sm} w={3} h={3} />
+                            <Text fontSize={11} color={COLORS.text}>
+                              Inaccurate: {voteStats.inaccurateVotes}
+                            </Text>
+                          </HStack>
+                          <HStack space="xs">
+                            <Box bg="#F59E0B" borderRadius={RADII.sm} w={3} h={3} />
+                            <Text fontSize={11} color={COLORS.text}>
+                              Unclear: {voteStats.unclearVotes}
+                            </Text>
+                          </HStack>
+                        </HStack>
+                      </VStack>
+                    </VStack>
+                  </Box>
+                )}
+
+                {/* Voting Buttons */}
+                <VStack space="xs">
+                  <Text fontSize={11} color={COLORS.textSecondary}>
+                    Is this report accurate?
+                  </Text>
+                  <HStack space="sm">
+                    <Pressable
+                      flex={1}
+                      bg={userVote === 'accurate' ? '#10B981' : COLORS.surface}
+                      borderRadius={RADII.md}
+                      py={SPACING.sm}
+                      px={SPACING.base}
+                      justifyContent="center"
+                      alignItems="center"
+                      onPress={() => submitVote('accurate')}
+                      disabled={votingLoading}
+                      opacity={votingLoading ? 0.6 : 1}
+                    >
+                      <Text
+                        fontSize={12}
+                        color={userVote === 'accurate' ? COLORS.white : COLORS.text}
+                        fontWeight="600"
+                      >
+                        ✓ Accurate
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      flex={1}
+                      bg={userVote === 'inaccurate' ? '#EF4444' : COLORS.surface}
+                      borderRadius={RADII.md}
+                      py={SPACING.sm}
+                      px={SPACING.base}
+                      justifyContent="center"
+                      alignItems="center"
+                      onPress={() => submitVote('inaccurate')}
+                      disabled={votingLoading}
+                      opacity={votingLoading ? 0.6 : 1}
+                    >
+                      <Text
+                        fontSize={12}
+                        color={userVote === 'inaccurate' ? COLORS.white : COLORS.text}
+                        fontWeight="600"
+                      >
+                        ✗ Inaccurate
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      flex={1}
+                      bg={userVote === 'unclear' ? '#F59E0B' : COLORS.surface}
+                      borderRadius={RADII.md}
+                      py={SPACING.sm}
+                      px={SPACING.base}
+                      justifyContent="center"
+                      alignItems="center"
+                      onPress={() => submitVote('unclear')}
+                      disabled={votingLoading}
+                      opacity={votingLoading ? 0.6 : 1}
+                    >
+                      <Text
+                        fontSize={12}
+                        color={userVote === 'unclear' ? COLORS.white : COLORS.text}
+                        fontWeight="600"
+                      >
+                        ? Unclear
+                      </Text>
+                    </Pressable>
+                  </HStack>
+                </VStack>
+              </VStack>
             </VStack>
           </ModalBody>
           <ModalFooter borderTopWidth={1} borderTopColor={COLORS.borderLight} pt={SPACING.base}>

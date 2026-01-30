@@ -35,6 +35,15 @@ export const CATEGORY_EMOJIS = {
 };
 
 /**
+ * Voting emoji mappings with Twemoji support
+ */
+export const VOTE_EMOJIS = {
+  accurate: '✅',
+  inaccurate: '❌',
+  unclear: '❓',
+};
+
+/**
  * Get Twemoji URL for a category
  */
 export const getCategoryEmojiUrl = (category) => {
