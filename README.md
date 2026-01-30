@@ -16,9 +16,9 @@ Most disaster apps assume connectivity. Ours assumes the opposite.
 
 Two things:
 
-1. **Mobile App** — React Native. Reports go to local SQLite first. Syncs when it can. Works in Arabic with full RTL. No login required.
+1. **Mobile App** - React Native. Reports go to local SQLite first. Syncs when it can. Works in Arabic with full RTL. No login required.
 
-2. **NGO Dashboard** — React. See all reports on a map. Prioritize. Dispatch teams. Export to CSV/PDF. Analytics by region.
+2. **NGO Dashboard** - React. See all reports on a map. Prioritize. Dispatch teams. Export to CSV/PDF. Analytics by region.
 
 Both talk to Supabase. The mobile app doesn't need a backend server. It syncs directly.
 
@@ -28,14 +28,14 @@ Eight conflict zones supported out of the box:
 
 | Region | Notes |
 |--------|-------|
-| Palestine | Gaza Strip boundary-aware — coordinates never fall inside Israel |
-| Sudan | — |
-| Yemen | — |
-| Syria | — |
-| Ukraine | — |
-| Afghanistan | — |
-| Lebanon | — |
-| Somalia | — |
+| Palestine | Gaza Strip boundary-aware - coordinates never fall inside Israel |
+| Sudan | - |
+| Yemen | - |
+| Syria | - |
+| Ukraine | - |
+| Afghanistan | - |
+| Lebanon | - |
+| Somalia | - |
 
 Adding more is trivial. Edit `utils/zones.ts`.
 
@@ -242,10 +242,10 @@ ngo-dashboard/
 |---------|-------------|--------|
 | Offline SQLite storage | [x] | [x] |
 | Supabase sync with retry | [x] | [x] |
-| Photo capture + compression | [x] | [ ] |
+| Photo capture + compression | [x] | [x] |
 | Random coordinates for privacy | [x] | [ ] |
 | Gaza boundary polygon check | [x] | [ ] |
-| Arabic/English i18n | [x] | [ ] |
+| Arabic/English i18n | [x] | [x] |
 | RTL layout | [x] | [ ] |
 | Hazard subcategories | [x] | [ ] |
 | Local sync notifications | [x] | [ ] |
