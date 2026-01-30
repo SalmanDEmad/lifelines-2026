@@ -22,44 +22,25 @@ import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryI
 import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
 import { isInGaza, isInPalestineRegion } from '../utils/geospatial';
 
-const CATEGORIES = [
-  { id: 'rubble', label: 'rubble' },
+// Material types for rubble
+const MATERIALS = [
+  { id: 'concrete', label: 'Concrete', color: '#64748B' },
+  { id: 'wood', label: 'Wood', color: '#92400E' },
+  { id: 'metal', label: 'Metal', color: '#475569' },
 ];
 
-const REPORT_SUBCATEGORY_TYPES = [
-  { id: 'hazard', label: 'hazard' },
-  { id: 'blocked_road', label: 'blocked_road' },
-];
-
-const RUBBLE_SUBCATEGORIES = [
-  { id: 'uxos', label: 'UXOs', color: '#DC2626' },
+// Optional hazards
+const HAZARDS = [
+  { id: 'uxo', label: 'UXOs', color: '#DC2626' },
+  { id: 'bodies', label: 'Human Remains', color: '#7C3AED' },
   { id: 'chemicals', label: 'Chemicals', color: '#F59E0B' },
-  { id: 'human_remains', label: 'Human Remains', color: '#7C3AED' },
-  { id: 'recyclable_concrete', label: 'Recyclable Concrete', color: '#10B981' },
-];
-
-const HAZARD_SUBCATEGORIES = [
-  { id: 'uxo', label: 'Unexploded Ordnance (UXO)', color: '#DC2626' },
-  { id: 'structural', label: 'Structural Collapse Risk', color: '#F59E0B' },
   { id: 'electrical', label: 'Electrical Hazard', color: '#EF4444' },
-  { id: 'chemical', label: 'Chemical/Gas Leak', color: '#8B5CF6' },
-  { id: 'water', label: 'Contaminated Water', color: '#3B82F6' },
-  { id: 'medical', label: 'Medical Emergency', color: '#06B6D4' },
-];
-
-const BLOCKED_ROAD_SUBCATEGORIES = [
-  { id: 'debris', label: 'Debris Blocking', color: '#92400E' },
-  { id: 'crater', label: 'Crater/Hole', color: '#78350F' },
-  { id: 'vehicle', label: 'Abandoned Vehicle', color: '#713F12' },
-  { id: 'structure', label: 'Collapsed Structure', color: '#92400E' },
+  { id: 'blocked_road', label: 'Blocked Road', color: '#92400E' },
 ];
 
 const ReportScreen = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedSubcategoryType, setSelectedSubcategoryType] = useState<string | null>('hazard'); // Default to hazard
-  const [rubbleSubcategory, setRubbleSubcategory] = useState<string | null>(null);
-  const [hazardSubcategory, setHazardSubcategory] = useState<string | null>(null);
-  const [blockedRoadSubcategory, setBlockedRoadSubcategory] = useState<string | null>(null);
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedHazards, setSelectedHazards] = useState<string[]>([]);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -184,10 +165,20 @@ const ReportScreen = () => {
     showPhotoSafetyWarning();
   };
 
-  const isCoordinateInIsrael = (lat: number, lng: number): boolean => {
-    // Israel approximate bounds (rough approximation for filtering)
-    // North: ~33.3°, South: ~31.0°, East: ~35.9°, West: ~34.2°
-    return lat >= 31.0 && lat <= 33.3 && lng >= 34.2 && lng <= 35.9;
+  const toggleMaterial = (materialId: string) => {
+    setSelectedMaterials(prev =>
+      prev.includes(materialId)
+        ? prev.filter(id => id !== materialId)
+        : [...prev, materialId]
+    );
+  };
+
+  const toggleHazard = (hazardId: string) => {
+    setSelectedHazards(prev =>
+      prev.includes(hazardId)
+        ? prev.filter(id => id !== hazardId)
+        : [...prev, hazardId]
+    );
   };
 
   const generateRandomCoordinatesInRegion = (regionKey: string) => {
@@ -224,8 +215,8 @@ const ReportScreen = () => {
   };
 
   const submitReport = async () => {
-    if (!selectedCategory) {
-      Alert.alert(t('report.missingInfo'), t('report.selectCategory'));
+    if (selectedMaterials.length === 0) {
+      Alert.alert(t('report.missingInfo'), 'Please select at least one material type');
       return;
     }
 
@@ -237,40 +228,35 @@ const ReportScreen = () => {
     try {
       setLoading(true);
 
-      // Get the selected region to get valid zones
       const selectedRegion = await AsyncStorage.getItem('selected_region') || DEFAULT_REGION;
       const regionZones = getZonesByRegion(selectedRegion).map(z => z.name);
       
-      // Normalize the zone - use the first zone if userZone doesn't match available zones
       let reportZone = userZone;
       if (!regionZones.includes(userZone) && regionZones.length > 0) {
         console.log('Zone mismatch:', userZone, 'not in', regionZones, 'using:', regionZones[0]);
-        reportZone = regionZones[0]; // Use first zone in region
+        reportZone = regionZones[0];
       }
 
-      // Generate random coordinates within the selected region (for privacy/safety)
       const randomCoords = generateRandomCoordinatesInRegion(selectedRegion);
 
       const report = {
         zone: reportZone,
-        category: selectedCategory as 'rubble' | 'hazard' | 'blocked_road',
-        subcategory: selectedCategory === 'rubble' ? rubbleSubcategory : selectedSubcategoryType === 'hazard' ? hazardSubcategory : blockedRoadSubcategory,
+        category: 'rubble' as const,
+        subcategory: `materials:${selectedMaterials.join(',')}${selectedHazards.length > 0 ? `|hazards:${selectedHazards.join(',')}` : ''}`,
         latitude: randomCoords.latitude,
         longitude: randomCoords.longitude,
         imageUri,
         description: description.trim() || undefined,
         timestamp: Date.now(),
-        user_id: user?.id, // Add user ID to report
+        user_id: user?.id,
       };
 
       await addLocalReport(report);
       await loadReportsFromDB();
 
       // Reset form
-      setSelectedCategory(null);
-      setRubbleSubcategory(null);
-      setHazardSubcategory(null);
-      setBlockedRoadSubcategory(null);
+      setSelectedMaterials([]);
+      setSelectedHazards([]);
       setImageUri(null);
       setImageSize(null);
       setDescription('');
@@ -354,6 +340,46 @@ const ReportScreen = () => {
     </Pressable>
   );
 
+  const TagButton = ({ 
+    id, 
+    label, 
+    color, 
+    isSelected, 
+    onToggle 
+  }: { 
+    id: string; 
+    label: string; 
+    color: string; 
+    isSelected: boolean;
+    onToggle: (id: string) => void;
+  }) => (
+    <Pressable
+      py={SPACING.sm}
+      px={SPACING.md}
+      borderRadius={RADII.md}
+      bg={isSelected ? color : COLORS.surface}
+      borderWidth={isSelected ? 0 : 1}
+      borderColor={COLORS.border}
+      onPress={() => onToggle(id)}
+      minHeight={LAYOUT.minTouchTarget}
+      justifyContent="center"
+      style={isSelected ? SHADOWS.sm : {}}
+    >
+      <HStack space="sm" alignItems="center" justifyContent="center">
+        {isSelected && (
+          <Icons.Synced size={ICON_SIZES.sm} color={COLORS.white} />
+        )}
+        <Text
+          color={isSelected ? COLORS.white : COLORS.text}
+          fontWeight="600"
+          fontSize={13}
+        >
+          {label}
+        </Text>
+      </HStack>
+    </Pressable>
+  );
+
   return (
     <ScrollView flex={1} bg={COLORS.background}>
       <Box 
@@ -367,246 +393,55 @@ const ReportScreen = () => {
             {t('report.title')}
           </Heading>
 
-          {/* Category Picker */}
+          {/* Materials Section */}
           <VStack space="sm">
-            <SectionHeading>{t('report.category')}</SectionHeading>
-            <HStack space="sm">
-              {CATEGORIES.map((cat) => {
-                const isSelected = selectedCategory === cat.id;
-                const catColor = getCategoryColor(cat.id);
+            <SectionHeading>Rubble - Select Materials (Required)</SectionHeading>
+            <VStack space="sm">
+              {MATERIALS.map((material) => {
+                const isSelected = selectedMaterials.includes(material.id);
                 return (
-                  <Pressable
-                    key={cat.id}
-                    flex={1}
-                    py={SPACING.md}
-                    px={SPACING.sm}
-                    borderRadius={RADII.md}
-                    bg={isSelected ? catColor : COLORS.surface}
-                    borderWidth={isSelected ? 0 : 1}
-                    borderColor={COLORS.border}
-                    onPress={() => setSelectedCategory(cat.id)}
-                    minHeight={LAYOUT.minTouchTarget}
-                    alignItems="center"
-                    justifyContent="center"
-                    style={isSelected ? SHADOWS.md : {}}
-                  >
-                    {(() => {
-                      const CategoryIcon = getCategoryIcon(cat.id);
-                      return (
-                        <Box mb={SPACING.xs}>
-                          <CategoryIcon size={ICON_SIZES.lg} color={isSelected ? COLORS.white : catColor} />
-                        </Box>
-                      );
-                    })()}
-                    <Text
-                      color={isSelected ? COLORS.white : COLORS.text}
-                      fontWeight="600"
-                      textAlign="center"
-                      fontSize={12}
-                    >
-                      {t(`categories.${cat.label}`)}
-                    </Text>
-                  </Pressable>
+                  <TagButton
+                    key={material.id}
+                    id={material.id}
+                    label={material.label}
+                    color={material.color}
+                    isSelected={isSelected}
+                    onToggle={toggleMaterial}
+                  />
                 );
               })}
-            </HStack>
+            </VStack>
+            {selectedMaterials.length > 0 && (
+              <Text fontSize={12} color={COLORS.success}>
+                ✓ {selectedMaterials.length} material(s) selected
+              </Text>
+            )}
           </VStack>
 
-          {/* Rubble Subcategory Selection */}
-          {selectedCategory === 'rubble' && (
+          {/* Hazards Section (Optional) */}
+          <VStack space="sm">
+            <SectionHeading>Hazards - Select Any (Optional)</SectionHeading>
             <VStack space="sm">
-              <SectionHeading>{t('report.rubbleType') || 'Type of Rubble'}</SectionHeading>
-              <VStack space="sm">
-                {RUBBLE_SUBCATEGORIES.map((sub) => {
-                  const isSelected = rubbleSubcategory === sub.id;
-                  return (
-                    <Pressable
-                      key={sub.id}
-                      py={SPACING.md}
-                      px={SPACING.lg}
-                      borderRadius={RADII.md}
-                      bg={isSelected ? sub.color : COLORS.surface}
-                      borderWidth={isSelected ? 0 : 1}
-                      borderColor={COLORS.border}
-                      onPress={() => setRubbleSubcategory(sub.id)}
-                      minHeight={LAYOUT.minTouchTarget}
-                      flexDirection="row"
-                      alignItems="center"
-                      style={isSelected ? SHADOWS.md : {}}
-                    >
-                      <Box 
-                        w={12} 
-                        h={12} 
-                        borderRadius={6} 
-                        bg={isSelected ? COLORS.white : sub.color} 
-                        mr={SPACING.md}
-                        opacity={isSelected ? 0.9 : 1}
-                      />
-                      <Text
-                        color={isSelected ? COLORS.white : COLORS.text}
-                        fontWeight="600"
-                        fontSize={14}
-                      >
-                        {sub.label}
-                      </Text>
-                      {isSelected && (
-                        <Box ml="auto">
-                          <Icons.Synced size={ICON_SIZES.md} color={COLORS.white} />
-                        </Box>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </VStack>
+              {HAZARDS.map((hazard) => {
+                const isSelected = selectedHazards.includes(hazard.id);
+                return (
+                  <TagButton
+                    key={hazard.id}
+                    id={hazard.id}
+                    label={hazard.label}
+                    color={hazard.color}
+                    isSelected={isSelected}
+                    onToggle={toggleHazard}
+                  />
+                );
+              })}
             </VStack>
-          )}
-
-          {/* Hazard/Blocked Road Subcategory Dropdown */}
-          {selectedCategory === 'rubble' && (
-            <>
-              <VStack space="sm">
-                <SectionHeading>{t('report.reportType') || 'Report Type'}</SectionHeading>
-                <HStack space="sm">
-                  {REPORT_SUBCATEGORY_TYPES.map((type) => {
-                    const isSelected = selectedSubcategoryType === type.id;
-                    const typeColor = getCategoryColor(type.id);
-                    return (
-                      <Pressable
-                        key={type.id}
-                        flex={1}
-                        py={SPACING.md}
-                        px={SPACING.sm}
-                        borderRadius={RADII.md}
-                        bg={isSelected ? typeColor : COLORS.surface}
-                        borderWidth={isSelected ? 0 : 1}
-                        borderColor={COLORS.border}
-                        onPress={() => setSelectedSubcategoryType(type.id)}
-                        minHeight={LAYOUT.minTouchTarget}
-                        alignItems="center"
-                        justifyContent="center"
-                        style={isSelected ? SHADOWS.md : {}}
-                      >
-                        {(() => {
-                          const TypeIcon = getCategoryIcon(type.id);
-                          return (
-                            <Box mb={SPACING.xs}>
-                              <TypeIcon size={ICON_SIZES.lg} color={isSelected ? COLORS.white : typeColor} />
-                            </Box>
-                          );
-                        })()}
-                        <Text
-                          color={isSelected ? COLORS.white : COLORS.text}
-                          fontWeight="600"
-                          textAlign="center"
-                          fontSize={12}
-                        >
-                          {t(`categories.${type.label}`)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </HStack>
-              </VStack>
-
-              {/* Show appropriate subcategories based on type selection */}
-              {selectedSubcategoryType === 'hazard' && (
-                <VStack space="sm">
-                  <SectionHeading>{t('report.hazardType') || 'Type of Hazard'}</SectionHeading>
-                  <VStack space="sm">
-                    {HAZARD_SUBCATEGORIES.map((sub) => {
-                      const isSelected = hazardSubcategory === sub.id;
-                      return (
-                        <Pressable
-                          key={sub.id}
-                          py={SPACING.md}
-                          px={SPACING.lg}
-                          borderRadius={RADII.md}
-                          bg={isSelected ? sub.color : COLORS.surface}
-                          borderWidth={isSelected ? 0 : 1}
-                          borderColor={COLORS.border}
-                          onPress={() => setHazardSubcategory(sub.id)}
-                          minHeight={LAYOUT.minTouchTarget}
-                          flexDirection="row"
-                          alignItems="center"
-                          style={isSelected ? SHADOWS.md : {}}
-                        >
-                          <Box 
-                            w={12} 
-                            h={12} 
-                            borderRadius={6} 
-                            bg={isSelected ? COLORS.white : sub.color} 
-                            mr={SPACING.md}
-                            opacity={isSelected ? 0.9 : 1}
-                          />
-                          <Text
-                            color={isSelected ? COLORS.white : COLORS.text}
-                            fontWeight="600"
-                            fontSize={14}
-                          >
-                            {sub.label}
-                          </Text>
-                          {isSelected && (
-                            <Box ml="auto">
-                              <Icons.Synced size={ICON_SIZES.md} color={COLORS.white} />
-                            </Box>
-                          )}
-                        </Pressable>
-                      );
-                    })}
-                  </VStack>
-                </VStack>
-              )}
-            </>
-          )}
-
-          {/* Blocked Road Subcategory Selection */}
-          {selectedCategory === 'rubble' && selectedSubcategoryType === 'blocked_road' && (
-            <VStack space="sm">
-              <SectionHeading>{t('report.blockedRoadType') || 'Type of Blockage'}</SectionHeading>
-              <VStack space="sm">
-                {BLOCKED_ROAD_SUBCATEGORIES.map((sub) => {
-                  const isSelected = blockedRoadSubcategory === sub.id;
-                  return (
-                    <Pressable
-                      key={sub.id}
-                      py={SPACING.md}
-                      px={SPACING.lg}
-                      borderRadius={RADII.md}
-                      bg={isSelected ? sub.color : COLORS.surface}
-                      borderWidth={isSelected ? 0 : 1}
-                      borderColor={COLORS.border}
-                      onPress={() => setBlockedRoadSubcategory(sub.id)}
-                      minHeight={LAYOUT.minTouchTarget}
-                      flexDirection="row"
-                      alignItems="center"
-                      style={isSelected ? SHADOWS.md : {}}
-                    >
-                      <Box 
-                        w={12} 
-                        h={12} 
-                        borderRadius={6} 
-                        bg={isSelected ? COLORS.white : sub.color} 
-                        mr={SPACING.md}
-                        opacity={isSelected ? 0.9 : 1}
-                      />
-                      <Text
-                        color={isSelected ? COLORS.white : COLORS.text}
-                        fontWeight="600"
-                        fontSize={14}
-                      >
-                        {sub.label}
-                      </Text>
-                      {isSelected && (
-                        <Box ml="auto">
-                          <Icons.Synced size={ICON_SIZES.md} color={COLORS.white} />
-                        </Box>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </VStack>
-            </VStack>
-          )}
+            {selectedHazards.length > 0 && (
+              <Text fontSize={12} color={COLORS.success}>
+                ✓ {selectedHazards.length} hazard(s) identified
+              </Text>
+            )}
+          </VStack>
 
           {/* Camera Section */}
           <VStack space="sm">
@@ -744,9 +579,10 @@ const ReportScreen = () => {
             <PrimaryButton 
               onPress={submitReport}
               label={t('report.submit')}
-              disabled={!selectedCategory || !imageUri || loading}
+              disabled={selectedMaterials.length === 0 || !imageUri || loading}
               isLoading={loading}
               IconComponent={Icons.Upload}
+            />
             />
           </Box>
         </VStack>
