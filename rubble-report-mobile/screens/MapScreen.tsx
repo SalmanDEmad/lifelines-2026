@@ -30,9 +30,10 @@ import { useAuth } from '../context/AuthContext';
 import { Report } from '../utils/database';
 import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryIcon, getStatusColor, getStatusIcon, Icons, ICON_SIZES } from '../design';
 import OfflineMap from '../components/OfflineMap';
-import { List, Map, Navigation2 } from 'lucide-react-native';
+import { List, Map, Navigation2, RefreshCw } from 'lucide-react-native';
 import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
 import { supabase } from '../utils/supabase';
+import { manualSync } from '../utils/syncManager';
 
 // Demo reports data for all regions
 const DEMO_REPORTS_BY_REGION: Record<string, Array<{ zone: string; category: string; lat: number; lng: number; description: string }>> = {
@@ -130,6 +131,7 @@ const formatDate = (timestamp: number): string => {
 const MapScreen = () => {
   const [isOnline, setIsOnline] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('map');
@@ -406,6 +408,21 @@ const MapScreen = () => {
       await loadReportsFromDB();
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleManualSync = async () => {
+    setSyncing(true);
+    try {
+      console.log('[UI] Manual sync button pressed');
+      await manualSync();
+      await loadReportsFromDB(); // Refresh UI after sync
+      Alert.alert('Sync', 'Reports sync attempt completed. Check console for details.');
+    } catch (error) {
+      console.error('Manual sync error:', error);
+      Alert.alert('Sync Error', 'Failed to sync reports. Check your internet connection.');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -997,6 +1014,31 @@ const MapScreen = () => {
           </VStack>
           {/* View Mode Toggle + Demo Button */}
           <HStack space="sm" alignItems="center">
+            {/* Sync Button - show when there are unsynced reports */}
+            {unsyncedCount > 0 && (
+              <Pressable
+                onPress={handleManualSync}
+                bg={COLORS.primary}
+                borderRadius={RADII.md}
+                p={SPACING.sm}
+                disabled={syncing}
+                opacity={syncing ? 0.6 : 1}
+              >
+                <HStack space="xs" alignItems="center">
+                  <RefreshCw 
+                    size={14} 
+                    color={COLORS.white} 
+                    style={{ 
+                      transform: syncing ? [{ rotate: '360deg' }] : [],
+                      opacity: syncing ? 0.7 : 1
+                    }}
+                  />
+                  <Text style={{ color: COLORS.white, fontWeight: '600', fontSize: 12 }}>
+                    {syncing ? 'Syncing...' : 'Sync'}
+                  </Text>
+                </HStack>
+              </Pressable>
+            )}
             {/* Demo Data Button - only show if demo data not loaded */}
             {!demoDataLoaded && (
               <Pressable

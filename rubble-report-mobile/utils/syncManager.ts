@@ -12,6 +12,8 @@ let unsubscribe: (() => void) | null = null;
 let isSyncing = false; // Prevent concurrent syncs
 let lastSyncTime = 0; // Debounce sync attempts
 const SYNC_DEBOUNCE_MS = 2000; // Minimum 2 seconds between syncs
+const SYNC_INTERVAL_MS = 30000; // Auto-sync every 30 seconds if unsynced reports exist
+let syncIntervalId: NodeJS.Timeout | null = null;
 
 export const startSyncWatcher = () => {
   console.log('Starting sync watcher...');
@@ -36,9 +38,26 @@ export const startSyncWatcher = () => {
     }
   });
 
+  // Set up periodic sync every 30 seconds (even if network doesn't change)
+  syncIntervalId = setInterval(async () => {
+    const state = await NetInfo.fetch();
+    if (state.isConnected) {
+      const now = Date.now();
+      if (now - lastSyncTime > SYNC_DEBOUNCE_MS) {
+        console.log('[SYNC-INTERVAL] Triggering periodic sync check');
+        await syncReports();
+      }
+    }
+  }, SYNC_INTERVAL_MS);
+
+  console.log('[SYNC] Auto-sync enabled: every 30 seconds');
+
   return () => {
     if (unsubscribe) {
       unsubscribe();
+    }
+    if (syncIntervalId) {
+      clearInterval(syncIntervalId);
     }
   };
 };
@@ -214,4 +233,15 @@ export const stopSyncWatcher = () => {
     unsubscribe = null;
     console.log('Sync watcher stopped');
   }
+  if (syncIntervalId) {
+    clearInterval(syncIntervalId);
+    syncIntervalId = null;
+    console.log('Sync interval cleared');
+  }
+};
+
+// Manual sync trigger for UI (e.g., pull to refresh, sync button)
+export const manualSync = async () => {
+  console.log('[MANUAL-SYNC] User triggered manual sync');
+  return await syncReports();
 };
