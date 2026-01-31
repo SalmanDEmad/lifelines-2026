@@ -21,21 +21,22 @@ import { useAuth } from '../context/AuthContext';
 import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryIcon, Icons, ICON_SIZES } from '../design';
 import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
 import { isInGaza, isInPalestineRegion } from '../utils/geospatial';
+import { AlertTriangle, AlertCircle, Flame, Zap, Navigation } from 'lucide-react-native';
 
-// Material types for rubble
+// Material types for rubble with icons
 const MATERIALS = [
-  { id: 'concrete', label: 'Concrete', color: '#64748B' },
-  { id: 'wood', label: 'Wood', color: '#92400E' },
-  { id: 'metal', label: 'Metal', color: '#475569' },
+  { id: 'concrete', label: 'Concrete', color: '#64748B', icon: AlertCircle },
+  { id: 'wood', label: 'Wood', color: '#92400E', icon: Navigation },
+  { id: 'metal', label: 'Metal', color: '#475569', icon: Zap },
 ];
 
-// Optional hazards
+// Optional hazards with icons
 const HAZARDS = [
-  { id: 'uxo', label: 'UXOs', color: '#DC2626' },
-  { id: 'bodies', label: 'Human Remains', color: '#7C3AED' },
-  { id: 'chemicals', label: 'Chemicals', color: '#F59E0B' },
-  { id: 'electrical', label: 'Electrical Hazard', color: '#EF4444' },
-  { id: 'blocked_road', label: 'Blocked Road', color: '#92400E' },
+  { id: 'uxo', label: 'UXOs', color: '#DC2626', icon: AlertTriangle },
+  { id: 'bodies', label: 'Human Remains', color: '#7C3AED', icon: AlertCircle },
+  { id: 'chemicals', label: 'Chemicals', color: '#F59E0B', icon: Flame },
+  { id: 'electrical', label: 'Electrical Hazard', color: '#EF4444', icon: Zap },
+  { id: 'blocked_road', label: 'Blocked Road', color: '#92400E', icon: AlertTriangle },
 ];
 
 const ReportScreen = () => {
@@ -353,12 +354,14 @@ const ReportScreen = () => {
     id, 
     label, 
     color, 
+    icon: IconComponent,
     isSelected, 
     onToggle 
   }: { 
     id: string; 
     label: string; 
-    color: string; 
+    color: string;
+    icon?: React.ComponentType<{ size: number; color: string }>;
     isSelected: boolean;
     onToggle: (id: string) => void;
   }) => (
@@ -380,6 +383,12 @@ const ReportScreen = () => {
       accessibilityState={{ selected: isSelected }}
     >
       <HStack space="sm" alignItems="center" justifyContent="center">
+        {IconComponent && (
+          <IconComponent 
+            size={18} 
+            color={isSelected ? COLORS.white : color} 
+          />
+        )}
         {isSelected && (
           <Icons.Synced size={ICON_SIZES.sm} color={COLORS.white} />
         )}
@@ -419,6 +428,7 @@ const ReportScreen = () => {
                     id={material.id}
                     label={material.label}
                     color={material.color}
+                    icon={material.icon}
                     isSelected={isSelected}
                     onToggle={toggleMaterial}
                   />
@@ -444,6 +454,7 @@ const ReportScreen = () => {
                     id={hazard.id}
                     label={hazard.label}
                     color={hazard.color}
+                    icon={hazard.icon}
                     isSelected={isSelected}
                     onToggle={toggleHazard}
                   />

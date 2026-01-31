@@ -601,8 +601,6 @@ export async function getNotificationRadius(): Promise<number> {
   return radius ? parseFloat(radius) : 2.0;
 }
 
-*/
-
 // ============================================================================
 // STUB IMPLEMENTATIONS FOR DISABLED NOTIFICATIONS
 // ============================================================================
