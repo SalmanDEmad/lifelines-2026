@@ -42,13 +42,6 @@ web-build/
 supabase/.branches/
 supabase/.temp/
 
-# Documentation files (keep README.md)
-VOTING_SYSTEM.md
-VOTING_INTEGRATION_COMPLETE.md
-VOTING_IMPLEMENTATION_SUMMARY.md
-TASKS_COMPLETED.md
-IMPLEMENTATION_CHECKLIST.md
-NGO_DASHBOARD_FIXES.md
-AUTH_SETUP.md
-SUPABASE_SETUP.md
-checklist.md
+# Documentation files (except README.md)
+*.md
+!README.md

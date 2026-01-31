@@ -35,7 +35,12 @@
     "feature2Desc": "Auto-detect report location",
     "feature3Title": "Local Storage",
     "feature3Desc": "Reports saved on your device",
-    "startOver": "Start Over"
+    "startOver": "Start Over",
+    "accessibility": "Accessibility",
+    "textSize": "Text Size",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large"
   },
   "report": {
     "title": "Report Disaster",

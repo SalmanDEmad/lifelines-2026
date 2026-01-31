@@ -408,7 +408,8 @@ export default function Dashboard() {
                   icon={createCategoryIcon(report.category)}
                 >
                   <Popup>
-                    <div style={{ fontSize: '13px', minWidth: '200px' }}>
+                    <div style={{ fontSize: '13px', minWidth: '300px', maxWidth: '400px' }}>
+                      {/* Header */}
                       <div style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
@@ -420,6 +421,25 @@ export default function Dashboard() {
                         <span style={{ fontSize: '20px' }}>{style.emoji}</span>
                         <strong style={{ fontSize: '15px' }}>{style.label}</strong>
                       </div>
+
+                      {/* Image Section */}
+                      {report.image_url && (
+                        <div style={{ marginBottom: '12px' }}>
+                          <img 
+                            src={report.image_url} 
+                            alt="Report" 
+                            style={{ 
+                              width: '100%', 
+                              height: '150px', 
+                              objectFit: 'cover', 
+                              borderRadius: '6px',
+                              border: '1px solid #d1d5db'
+                            }} 
+                          />
+                        </div>
+                      )}
+
+                      {/* Zone and Status */}
                       <p style={{ margin: '4px 0', color: '#374151' }}>
                         <strong>Zone:</strong> {report.zone || 'Unknown'}
                       </p>
@@ -440,15 +460,78 @@ export default function Dashboard() {
                           {report.status || 'pending'}
                         </span>
                       </p>
+
+                      {/* Materials Section */}
+                      {report.subcategory && report.subcategory.includes('materials:') && (
+                        <div style={{ margin: '8px 0', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+                          <strong style={{ fontSize: '12px', color: '#374151', display: 'block', marginBottom: '6px' }}>Materials:</strong>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {report.subcategory.split('|')[0]?.replace('materials:', '').split(',').map((material, idx) => (
+                              <span 
+                                key={idx}
+                                style={{ 
+                                  backgroundColor: '#3B82F6', 
+                                  color: 'white', 
+                                  padding: '3px 8px', 
+                                  borderRadius: '4px', 
+                                  fontSize: '11px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                {material.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hazards Section */}
+                      {report.subcategory && report.subcategory.includes('hazards:') && (
+                        <div style={{ margin: '8px 0', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+                          <strong style={{ fontSize: '12px', color: '#374151', display: 'block', marginBottom: '6px' }}>Hazards:</strong>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {report.subcategory.split('|').find(p => p.startsWith('hazards:'))?.replace('hazards:', '').split(',').map((hazard, idx) => {
+                              const hazardColors = {
+                                uxo: '#EF4444',
+                                bodies: '#7C3AED',
+                                chemicals: '#F59E0B',
+                                electrical: '#DC2626',
+                                blocked_road: '#8B6914'
+                              };
+                              return (
+                                <span 
+                                  key={idx}
+                                  style={{ 
+                                    backgroundColor: hazardColors[hazard.trim()] || '#6B7280', 
+                                    color: 'white', 
+                                    padding: '3px 8px', 
+                                    borderRadius: '4px', 
+                                    fontSize: '11px',
+                                    fontWeight: '600'
+                                  }}
+                                >
+                                  {hazard.trim()}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Description */}
                       {report.description && (
                         <p style={{ margin: '8px 0 4px', color: '#6b7280', fontSize: '12px' }}>
                           {report.description}
                         </p>
                       )}
+
+                      {/* Location */}
                       <p style={{ margin: '4px 0 0', color: '#9ca3af', fontSize: '11px' }}>
                         <img src={getTwemojiUrl('📍')} alt="📍" style={{ width: '12px', height: '12px', verticalAlign: 'middle', marginRight: '4px' }} />
                         {lat.toFixed(4)}, {lng.toFixed(4)}
                       </p>
+
+                      {/* Timestamp */}
                       {report.created_at && (
                         <p style={{ margin: '4px 0 0', color: '#9ca3af', fontSize: '11px' }}>
                           <img src={getTwemojiUrl('🕐')} alt="🕐" style={{ width: '12px', height: '12px', verticalAlign: 'middle', marginRight: '4px' }} />

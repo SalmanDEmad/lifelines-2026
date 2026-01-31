@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  AccessibilityInfo,
 } from 'react-native';
 import { MapPin, Globe, RefreshCw, Info, Shield, Database, LogOut } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -22,6 +23,8 @@ const SettingsScreen = () => {
   const [zone, setZone] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [screenReaderEnabled, setScreenReaderEnabled] = useState(false);
   const { t, language, setLanguage, isRTL } = useTranslation();
   const { signOut } = useAuth();
   
@@ -30,6 +33,8 @@ const SettingsScreen = () => {
 
   useEffect(() => {
     checkZone();
+    loadTextSize();
+    checkScreenReaderStatus();
   }, []);
 
   const checkZone = async () => {
@@ -40,6 +45,35 @@ const SettingsScreen = () => {
       }
     } catch (error) {
       console.error('Error checking zone:', error);
+    }
+  };
+
+  const checkScreenReaderStatus = async () => {
+    try {
+      const enabled = await AccessibilityInfo.isScreenReaderEnabled();
+      setScreenReaderEnabled(enabled);
+    } catch (error) {
+      console.error('Error checking screen reader status:', error);
+    }
+  };
+
+  const loadTextSize = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('textSize');
+      if (saved) {
+        setTextSize(saved as 'small' | 'medium' | 'large');
+      }
+    } catch (error) {
+      console.error('Error loading text size:', error);
+    }
+  };
+
+  const saveTextSize = async (newSize: 'small' | 'medium' | 'large') => {
+    try {
+      await AsyncStorage.setItem('textSize', newSize);
+      setTextSize(newSize);
+    } catch (error) {
+      console.error('Error saving text size:', error);
     }
   };
 
@@ -170,6 +204,10 @@ const SettingsScreen = () => {
       onPress={onPress}
       activeOpacity={0.7}
       disabled={isLoading}
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityHint={value ? `Current value: ${value}` : 'Tap to change'}
+      accessibilityRole="button"
     >
       <View style={[styles.iconContainer, { backgroundColor: COLORS.primary + '20' }]}>
         <IconComponent size={20} color={COLORS.primary} />
@@ -225,6 +263,56 @@ const SettingsScreen = () => {
     </View>
   );
 
+  const TextSizeSelector = () => {
+    const sizes: Array<{ key: 'small' | 'medium' | 'large'; label: string; fontSize: number }> = [
+      { key: 'small', label: t('setup.small'), fontSize: 14 },
+      { key: 'medium', label: t('setup.medium'), fontSize: 16 },
+      { key: 'large', label: t('setup.large'), fontSize: 18 },
+    ];
+
+    return (
+      <View style={styles.sectionContainer}>
+        <View style={[styles.textSizeHeader, isRTL && { flexDirection: 'row-reverse' }]}>
+          <Text 
+            style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}
+            accessible={true}
+            accessibilityLabel={t('setup.textSize')}
+            accessibilityHint="Choose your preferred text size for better readability"
+          >
+            {t('setup.textSize')}
+          </Text>
+        </View>
+        <View style={[styles.textSizeButtons, isRTL && { flexDirection: 'row-reverse' }]}>
+          {sizes.map((size) => (
+            <TouchableOpacity
+              key={size.key}
+              style={[
+                styles.sizeButton,
+                textSize === size.key && styles.sizeButtonActive,
+              ]}
+              onPress={() => saveTextSize(size.key)}
+              accessible={true}
+              accessibilityLabel={`${size.label} text size`}
+              accessibilityHint={textSize === size.key ? 'Currently selected' : 'Tap to select'}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: textSize === size.key }}
+            >
+              <Text
+                style={[
+                  styles.sizeButtonText,
+                  { fontSize: size.fontSize },
+                  textSize === size.key && styles.sizeButtonTextActive,
+                ]}
+              >
+                {size.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, isRTL && { direction: 'rtl' }]}>
       <ScrollView 
@@ -248,13 +336,52 @@ const SettingsScreen = () => {
             isLoading={loading}
           />
           <View style={styles.divider} />
-          <SettingCard
-            icon={Globe}
-            label={t('setup.language')}
-            value={language === 'en' ? 'English' : 'العربية'}
+          <TouchableOpacity 
+            style={[styles.settingCard, isRTL && { flexDirection: 'row-reverse' }]}
             onPress={toggleLanguage}
-          />
+            activeOpacity={0.7}
+            accessible={true}
+            accessibilityLabel={`Language, currently ${language === 'en' ? 'English' : 'Arabic'}`}
+            accessibilityHint="Double tap to switch language"
+            accessibilityRole="button"
+          >
+            <View style={[styles.iconContainer, { backgroundColor: COLORS.primary + '20' }]}>
+              <Globe size={20} color={COLORS.primary} />
+            </View>
+            <View style={[styles.cardContent, isRTL && { marginRight: 12, marginLeft: 0 }]}>
+              <Text style={[styles.cardLabel, isRTL && { textAlign: 'right' }]}>
+                {t('setup.language')}
+              </Text>
+              <Text style={[styles.cardValue, isRTL && { textAlign: 'right' }]}>
+                {language === 'en' ? 'English' : 'العربية'}
+              </Text>
+            </View>
+            <RefreshCw size={18} color={COLORS.textLight} />
+          </TouchableOpacity>
         </View>
+
+        {/* Accessibility Section */}
+        <SectionTitle title={t('setup.accessibility')} />
+        
+        {/* VoiceOver Status */}
+        <View style={styles.sectionContainer}>
+          <View style={[styles.settingCard, isRTL && { flexDirection: 'row-reverse' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: '#E0E7FF' }]}>
+              <Text style={{ fontSize: 20 }}>🔊</Text>
+            </View>
+            <View style={[styles.cardContent, isRTL && { marginRight: 12, marginLeft: 0 }]}>
+              <Text style={[styles.cardLabel, isRTL && { textAlign: 'right' }]}>
+                Screen Reader (VoiceOver)
+              </Text>
+              <Text style={[styles.cardValue, isRTL && { textAlign: 'right' }]}>
+                {screenReaderEnabled ? 'Enabled' : 'Not Detected'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+        </View>
+
+        <TextSizeSelector />
 
         {/* Stats Section */}
         <SectionTitle title={t('setup.stats')} />
@@ -318,6 +445,10 @@ const SettingsScreen = () => {
           style={styles.primaryButton}
           onPress={handleGoToOnboarding}
           activeOpacity={0.7}
+          accessible={true}
+          accessibilityLabel="Start Over"
+          accessibilityHint="Reset setup and go through onboarding again"
+          accessibilityRole="button"
         >
           <Text style={styles.buttonText}>
             {t('setup.startOver') || 'Start Over'}
@@ -329,6 +460,10 @@ const SettingsScreen = () => {
           style={[styles.primaryButton, { backgroundColor: '#6B7280', marginTop: 12 }]}
           onPress={handleDebugStorage}
           activeOpacity={0.7}
+          accessible={true}
+          accessibilityLabel="Debug Storage"
+          accessibilityHint="Show current storage values for debugging"
+          accessibilityRole="button"
         >
           <Text style={styles.buttonText}>
             Debug: Show Storage Values
@@ -340,6 +475,10 @@ const SettingsScreen = () => {
           style={styles.logoutButton}
           onPress={handleLogout}
           activeOpacity={0.7}
+          accessible={true}
+          accessibilityLabel="Logout"
+          accessibilityHint="Sign out of your account"
+          accessibilityRole="button"
         >
           <LogOut size={18} color="#D32F2F" />
           <Text style={styles.logoutText}>
@@ -524,6 +663,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#D32F2F',
     marginLeft: 8,
+  },
+  textSizeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SIZES.padding,
+    paddingTop: SIZES.padding,
+  },
+  textSizeButtons: {
+    flexDirection: 'row',
+    gap: SIZES.padding_small,
+    padding: SIZES.padding,
+  },
+  sizeButton: {
+    flex: 1,
+    paddingVertical: SIZES.padding_small,
+    paddingHorizontal: SIZES.padding_small,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 56,
+  },
+  sizeButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  sizeButtonText: {
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  sizeButtonTextActive: {
+    color: COLORS.white,
   },
 });
 

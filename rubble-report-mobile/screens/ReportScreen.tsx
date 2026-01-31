@@ -301,6 +301,11 @@ const ReportScreen = () => {
       onPress={disabled ? undefined : onPress}
       opacity={disabled ? 0.6 : 1}
       style={SHADOWS.md}
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityHint={disabled ? 'This button is disabled' : `Tap to ${label.toLowerCase()}`}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
     >
       {isLoading ? (
         <ActivityIndicator size="small" color={COLORS.white} />
@@ -333,6 +338,10 @@ const ReportScreen = () => {
       onPress={onPress}
       borderWidth={1}
       borderColor={COLORS.border}
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityHint={`Tap to ${label.toLowerCase()}`}
+      accessibilityRole="button"
     >
       <Text fontSize={14} color={COLORS.primary} fontWeight="600">
         {label}
@@ -364,6 +373,11 @@ const ReportScreen = () => {
       minHeight={LAYOUT.minTouchTarget}
       justifyContent="center"
       style={isSelected ? SHADOWS.sm : {}}
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityHint={isSelected ? `${label} is selected` : `Select ${label}`}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: isSelected }}
     >
       <HStack space="sm" alignItems="center" justifyContent="center">
         {isSelected && (

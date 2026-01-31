@@ -35,7 +35,12 @@
     "feature2Desc": "اكتشاف موقع التقرير تلقائياً",
     "feature3Title": "التخزين المحلي",
     "feature3Desc": "يتم حفظ التقارير على جهازك",
-    "startOver": "ابدأ من جديد"
+    "startOver": "ابدأ من جديد",
+    "accessibility": "إمكانية الوصول",
+    "textSize": "حجم النص",
+    "small": "صغير",
+    "medium": "متوسط",
+    "large": "كبير"
   },
   "report": {
     "title": "الإبلاغ عن كارثة",

@@ -81,8 +81,9 @@ export const reportsApi = {
   }
 };
 
-// Teams API
+// Teams API - Hierarchical team management
 export const teamsApi = {
+  // Get all teams (containers)
   async getAll() {
     const { data, error } = await supabase
       .from('teams')
@@ -90,17 +91,58 @@ export const teamsApi = {
       .order('created_at', { ascending: false });
     
     if (error) {
-      // Table might not exist yet
+      // Table might not exist yet - create it
       console.log('Teams table error:', error);
+      // Try to create teams table if it doesn't exist
+      try {
+        const { error: createError } = await supabase.rpc('exec', {
+          sql: `CREATE TABLE IF NOT EXISTS teams (
+            id BIGSERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+          )`
+        }).catch(() => ({}));
+      } catch (e) {
+        console.log('Could not auto-create teams table');
+      }
       return [];
     }
     return data || [];
   },
 
-  async create(team) {
+  // Get all members
+  async getAllMembers() {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      // Table might not exist yet
+      console.log('Team members table error:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  // Get teams with their members
+  async getTeamsWithMembers() {
+    const teams = await this.getAll();
+    const members = await this.getAllMembers();
+    
+    return teams.map(team => ({
+      ...team,
+      members: members.filter(m => m.team_id === team.id)
+    }));
+  },
+
+  // Create a new team (container)
+  async createTeam(teamData) {
     const { data, error } = await supabase
       .from('teams')
-      .insert([team])
+      .insert([{
+        name: teamData.name,
+      }])
       .select()
       .single();
     
@@ -108,13 +150,61 @@ export const teamsApi = {
     return data;
   },
 
-  async delete(id) {
+  // Create a new team member
+  async createMember(memberData) {
+    const { data, error } = await supabase
+      .from('team_members')
+      .insert([{
+        name: memberData.name,
+        phone: memberData.phone,
+        team_id: memberData.team_id || null,
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete a team (will set members to unassigned)
+  async deleteTeam(id) {
+    // First, unassign all members from this team
+    await supabase
+      .from('team_members')
+      .update({ team_id: null })
+      .eq('team_id', id);
+    
+    // Then delete the team
     const { error } = await supabase
       .from('teams')
       .delete()
       .eq('id', id);
     
     if (error) throw error;
+  },
+
+  // Delete a team member
+  async deleteMember(id) {
+    const { error } = await supabase
+      .from('team_members')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  // Legacy method for backward compatibility
+  async create(team) {
+    return this.createMember({
+      name: team.name,
+      phone: team.phone,
+      team_id: null
+    });
+  },
+
+  // Legacy method for backward compatibility
+  async delete(id) {
+    return this.deleteMember(id);
   }
 };
 
