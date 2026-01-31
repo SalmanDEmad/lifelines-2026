@@ -17,6 +17,8 @@ export default function Teams() {
     try {
       const teamsData = await teamsApi.getAll();
       const membersData = await teamsApi.getAllMembers();
+      console.log('Teams loaded:', teamsData);
+      console.log('Members loaded:', membersData);
       setTeams(teamsData);
       setMembers(membersData);
       
@@ -432,15 +434,21 @@ export default function Teams() {
                 </div>
                 <div className="form-group">
                   <label>Assign to Team</label>
-                  <select
-                    value={memberFormData.team_id || ''}
-                    onChange={(e) => setMemberFormData({ ...memberFormData, team_id: e.target.value || null })}
-                  >
-                    <option value="">Unassigned</option>
-                    {teams.map(team => (
-                      <option key={team.id} value={team.id}>{team.name}</option>
-                    ))}
-                  </select>
+                  {teams.length === 0 ? (
+                    <div style={{ padding: '10px', background: '#f0f0f0', borderRadius: '4px', fontSize: '14px', color: '#666' }}>
+                      No teams exist. Create a team first.
+                    </div>
+                  ) : (
+                    <select
+                      value={memberFormData.team_id || ''}
+                      onChange={(e) => setMemberFormData({ ...memberFormData, team_id: e.target.value || null })}
+                    >
+                      <option value="">Unassigned</option>
+                      {teams.map(team => (
+                        <option key={team.id} value={team.id}>{team.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
               <div className="modal-footer">
