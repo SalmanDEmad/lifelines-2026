@@ -3,28 +3,45 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://niwiwfngnejwqlulcuin.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pd2l3Zm5nbmVqd3FsdWxjdWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzc0NjUsImV4cCI6MjA4NDkxMzQ2NX0.03Q7r9-GkUsNbD9iW8QyRJCotfzNVzTpgEIYAo5JDno';
 
-// Create single instance only
-let supabaseInstance = null;
-
-function getSupabase() {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-      },
-      global: {
-        headers: {
-          'X-Client-Info': 'lifelines-ngo-dashboard',
+// Store instance on window to survive HMR
+const getSupabaseInstance = () => {
+  // Use window object to persist instance across hot module reloads
+  if (typeof window !== 'undefined') {
+    if (!window.__supabaseInstance) {
+      window.__supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          storageKey: 'lifelines-auth',
         },
-      },
-    });
+        global: {
+          headers: {
+            'X-Client-Info': 'lifelines-ngo-dashboard',
+          },
+        },
+      });
+    }
+    return window.__supabaseInstance;
   }
-  return supabaseInstance;
-}
+  
+  // Fallback for non-browser environments
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+      storageKey: 'lifelines-auth',
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'lifelines-ngo-dashboard',
+      },
+    },
+  });
+};
 
-export const supabase = getSupabase();
+export const supabase = getSupabaseInstance();
 
 // Helper to handle common errors and retry with fresh connection
 const withRetry = async (fn, retries = 2) => {
@@ -37,10 +54,13 @@ const withRetry = async (fn, retries = 2) => {
       
       if ((isJwtError || isNetworkError) && i < retries) {
         console.log(`[RETRY] Attempt ${i + 1} failed, retrying...`, error.message);
-        // Clear and recreate instance on JWT errors
-        if (isJwtError) {
-          supabaseInstance = null;
-          getSupabase();
+        // On JWT errors, try to refresh the session
+        if (isJwtError && supabase.auth) {
+          try {
+            await supabase.auth.refreshSession();
+          } catch (refreshError) {
+            console.log('[RETRY] Session refresh failed:', refreshError.message);
+          }
         }
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
         continue;
