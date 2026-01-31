@@ -13,7 +13,9 @@ let isSyncing = false; // Prevent concurrent syncs
 let lastSyncTime = 0; // Debounce sync attempts
 const SYNC_DEBOUNCE_MS = 2000; // Minimum 2 seconds between syncs
 const SYNC_INTERVAL_MS = 30000; // Auto-sync every 30 seconds if unsynced reports exist
+const SYNC_TIMEOUT_MS = 60000; // 60 second timeout to prevent stuck sync state
 let syncIntervalId: NodeJS.Timeout | null = null;
+let syncTimeoutId: NodeJS.Timeout | null = null;
 
 export const startSyncWatcher = () => {
   console.log('Starting sync watcher...');
@@ -77,11 +79,20 @@ export const syncReports = async () => {
     setIsSyncing(true);
     console.log('Starting sync...');
 
+    // Set timeout to prevent sync state from getting stuck
+    syncTimeoutId = setTimeout(() => {
+      console.error('[SYNC-TIMEOUT] Sync took too long, forcefully resetting state');
+      isSyncing = false;
+      setIsSyncing(false);
+    }, SYNC_TIMEOUT_MS);
+
     const unsyncedReports = await getUnsyncedReports();
     
     if (unsyncedReports.length === 0) {
       console.log('No reports to sync');
       setIsSyncing(false);
+      isSyncing = false;
+      if (syncTimeoutId) clearTimeout(syncTimeoutId);
       return;
     }
 
@@ -127,6 +138,12 @@ export const syncReports = async () => {
     console.error('Sync error:', error);
     setIsSyncing(false);
     isSyncing = false;
+  } finally {
+    // Always clear the timeout to prevent it from running after sync completes
+    if (syncTimeoutId) {
+      clearTimeout(syncTimeoutId);
+      syncTimeoutId = null;
+    }
   }
 };
 
@@ -244,4 +261,17 @@ export const stopSyncWatcher = () => {
 export const manualSync = async () => {
   console.log('[MANUAL-SYNC] User triggered manual sync');
   return await syncReports();
+};
+
+// Force reset sync state if stuck (recovery function)
+export const resetSyncState = () => {
+  console.warn('[SYNC-RECOVERY] Force resetting sync state');
+  if (syncTimeoutId) {
+    clearTimeout(syncTimeoutId);
+    syncTimeoutId = null;
+  }
+  isSyncing = false;
+  const { setIsSyncing } = useReportStore.getState();
+  setIsSyncing(false);
+  console.log('[SYNC-RECOVERY] Sync state reset. Manual sync should now work.');
 };
