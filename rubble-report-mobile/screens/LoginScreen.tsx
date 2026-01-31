@@ -71,6 +71,14 @@ export default function LoginScreen({ onNavigateToSignup, onSkip }: LoginScreenP
         </TouchableOpacity>
 
         <Box style={styles.header}>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoIcon}>
+              <Text style={styles.logoText}>أ</Text>
+            </View>
+            <Text style={styles.logoTitle}>Amal أمل</Text>
+            <Text style={styles.logoSubtitle}>Mapping Gaza's Debris</Text>
+          </View>
           <Heading size="2xl" style={styles.title}>
             {t('auth.welcome')}
           </Heading>
@@ -164,6 +172,34 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 40,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  logoTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  logoSubtitle: {
+    fontSize: 14,
+    color: COLORS.textLight,
   },
   title: {
     color: COLORS.text,

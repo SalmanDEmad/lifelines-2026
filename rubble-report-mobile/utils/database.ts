@@ -41,6 +41,7 @@ export interface Report {
   id?: string;
   zone: string;
   category: 'rubble' | 'hazard' | 'blocked_road';
+  subcategory?: string;
   latitude: number;
   longitude: number;
   imageUri?: string;

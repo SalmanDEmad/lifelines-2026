@@ -106,7 +106,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     
     if (result.success) {
       // Register device for hazard proximity notifications
-      const region = REGIONS[selectedRegion];
+      const region = REGIONS[selectedRegion as keyof typeof REGIONS] || REGIONS.palestine;
       if (region?.center) {
         await registerDeviceForNotifications(
           selectedRegion,
@@ -239,14 +239,22 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       {/* Hero illustration area */}
       <View style={styles.heroSection}>
         <View style={styles.heroGradient}>
+          {/* Logo and branding */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoIcon}>
+              <Text style={styles.logoText}>أ</Text>
+            </View>
+            <Text style={styles.logoTitle}>Amal أمل</Text>
+            <Text style={styles.logoSubtitle}>Mapping Gaza's Debris</Text>
+          </View>
           {/* Map pin illustration */}
           <View style={styles.mapPinContainer}>
-            <MapPin size={80} color={COLORS.primary} />
+            <MapPin size={60} color={COLORS.primary} />
           </View>
           {/* Phone with map illustration */}
           <View style={styles.phoneIllustration}>
             <View style={styles.phoneFrame}>
-              <Navigation size={32} color={COLORS.primary} />
+              <Navigation size={28} color={COLORS.primary} />
             </View>
           </View>
         </View>
@@ -294,14 +302,6 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
               {t('onboarding.feature3Desc') || 'Help neighbors find safe paths'}
             </Text>
           </View>
-        </View>
-
-        {/* Pagination dots */}
-        <View style={styles.paginationDots}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
         </View>
 
         {/* Get Started button */}
@@ -759,6 +759,35 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 30,
     transform: [{ rotate: '-15deg' }],
+  },
+  // Logo styles for onboarding
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  logoTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  logoSubtitle: {
+    fontSize: 12,
+    color: '#666',
   },
   introCard: {
     backgroundColor: '#FAFAFA',

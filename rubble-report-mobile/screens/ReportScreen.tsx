@@ -418,7 +418,7 @@ const ReportScreen = () => {
 
           {/* Materials Section */}
           <VStack space="sm">
-            <SectionHeading>Rubble - Select Materials (Required)</SectionHeading>
+            <SectionHeading>{t('report.materialsRequired') || 'Rubble - Select Materials (Required)'}</SectionHeading>
             <VStack space="sm">
               {MATERIALS.map((material) => {
                 const isSelected = selectedMaterials.includes(material.id);
@@ -426,7 +426,7 @@ const ReportScreen = () => {
                   <TagButton
                     key={material.id}
                     id={material.id}
-                    label={material.label}
+                    label={t(`materials.${material.id}`) || material.label}
                     color={material.color}
                     icon={material.icon}
                     isSelected={isSelected}
@@ -437,14 +437,14 @@ const ReportScreen = () => {
             </VStack>
             {selectedMaterials.length > 0 && (
               <Text fontSize={12} color={COLORS.success}>
-                ✓ {selectedMaterials.length} material(s) selected
+                ✓ {selectedMaterials.length} {t('report.materialsSelected')?.replace('{count}', '') || 'material(s) selected'}
               </Text>
             )}
           </VStack>
 
           {/* Hazards Section (Optional) */}
           <VStack space="sm">
-            <SectionHeading>Hazards - Select Any (Optional)</SectionHeading>
+            <SectionHeading>{t('report.hazardsOptional') || 'Hazards - Select Any (Optional)'}</SectionHeading>
             <VStack space="sm">
               {HAZARDS.map((hazard) => {
                 const isSelected = selectedHazards.includes(hazard.id);
@@ -452,7 +452,7 @@ const ReportScreen = () => {
                   <TagButton
                     key={hazard.id}
                     id={hazard.id}
-                    label={hazard.label}
+                    label={t(`hazards.${hazard.id}`) || hazard.label}
                     color={hazard.color}
                     icon={hazard.icon}
                     isSelected={isSelected}
@@ -463,7 +463,7 @@ const ReportScreen = () => {
             </VStack>
             {selectedHazards.length > 0 && (
               <Text fontSize={12} color={COLORS.success}>
-                ✓ {selectedHazards.length} hazard(s) identified
+                ✓ {selectedHazards.length} {t('report.hazardsIdentified')?.replace('{count}', '') || 'hazard(s) identified'}
               </Text>
             )}
           </VStack>

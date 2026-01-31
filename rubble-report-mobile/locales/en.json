@@ -67,7 +67,23 @@
     "safetyWarning": "Safety Warning",
     "safetyMessage": "Do not endanger yourself when taking photos. Stay away from unstable structures, hazardous materials, and dangerous areas. Your safety is the priority.",
     "proceedToPhoto": "I Understand, Take Photo",
-    "rubbleType": "Type of Rubble"
+    "rubbleType": "Type of Rubble",
+    "materialsRequired": "Rubble - Select Materials (Required)",
+    "hazardsOptional": "Hazards - Select Any (Optional)",
+    "materialsSelected": "{count} material(s) selected",
+    "hazardsIdentified": "{count} hazard(s) identified"
+  },
+  "materials": {
+    "concrete": "Concrete",
+    "wood": "Wood",
+    "metal": "Metal"
+  },
+  "hazards": {
+    "uxo": "UXOs",
+    "bodies": "Human Remains",
+    "chemicals": "Chemicals",
+    "electrical": "Electrical Hazard",
+    "blocked_road": "Blocked Road"
   },
   "map": {
     "title": "Your Reports",

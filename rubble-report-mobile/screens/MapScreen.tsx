@@ -617,14 +617,14 @@ const MapScreen = () => {
                   <VStack space="sm">
                     {(() => {
                       // Parse the subcategory string: "materials:concrete,metal|hazards:uxo,chemicals"
-                      const parts = selectedReport.subcategory.split('|');
-                      const materialsMatch = parts.find(p => p.startsWith('materials:'));
-                      const hazardsMatch = parts.find(p => p.startsWith('hazards:'));
+                      const parts = selectedReport.subcategory?.split('|') || [];
+                      const materialsMatch = parts.find((p: string) => p.startsWith('materials:'));
+                      const hazardsMatch = parts.find((p: string) => p.startsWith('hazards:'));
                       
-                      const materials = materialsMatch 
+                      const materials: string[] = materialsMatch 
                         ? materialsMatch.replace('materials:', '').split(',') 
                         : [];
-                      const hazards = hazardsMatch 
+                      const hazards: string[] = hazardsMatch 
                         ? hazardsMatch.replace('hazards:', '').split(',') 
                         : [];
 
@@ -636,7 +636,7 @@ const MapScreen = () => {
                                 Materials:
                               </Text>
                               <HStack space="xs" flexWrap="wrap">
-                                {materials.map((material) => (
+                                {materials.map((material: string) => (
                                   <Box
                                     key={material}
                                     bg={COLORS.primary}
@@ -659,7 +659,7 @@ const MapScreen = () => {
                                 Hazards:
                               </Text>
                               <HStack space="xs" flexWrap="wrap">
-                                {hazards.map((hazard) => {
+                                {hazards.map((hazard: string) => {
                                   const hazardLabel = hazard === 'uxo' ? 'UXOs' 
                                     : hazard === 'bodies' ? 'Human Remains'
                                     : hazard === 'electrical' ? 'Electrical'
@@ -749,13 +749,24 @@ const MapScreen = () => {
               </HStack>
 
               {/* Consensus/Voting Section */}
-              <VStack space="sm" py={SPACING.sm}>
-                <Text fontSize={12} color={COLORS.textSecondary} fontWeight="600">
-                  Community Consensus ({voteStats?.totalVotes || 0} votes)
-                </Text>
+              <Box 
+                bg={COLORS.surface} 
+                borderRadius={RADII.lg} 
+                p={SPACING.md}
+                borderWidth={2}
+                borderColor={COLORS.primary}
+                style={SHADOWS.md}
+              >
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <Text fontSize={14} color={COLORS.primary} fontWeight="700">
+                    🗳️ Community Voting
+                  </Text>
+                  <Text fontSize={12} color={COLORS.textSecondary}>({voteStats?.totalVotes || 0} votes)</Text>
+                </HStack>
                 
                 {voteStats && (
-                  <Box bg={COLORS.surface} borderRadius={RADII.md} p={SPACING.md}>
+                  <Box bg={COLORS.background} borderRadius={RADII.md} p={SPACING.sm} borderWidth={1} borderColor={COLORS.border}>
                     <VStack space="sm">
                       {/* Accuracy Percentage Bar */}
                       <HStack space="sm" alignItems="center">
@@ -802,76 +813,88 @@ const MapScreen = () => {
                 )}
 
                 {/* Voting Buttons */}
-                <VStack space="xs">
-                  <Text fontSize={11} color={COLORS.textSecondary}>
-                    Is this report accurate?
-                  </Text>
-                  <HStack space="sm">
-                    <Pressable
-                      flex={1}
-                      bg={userVote === 'accurate' ? '#10B981' : COLORS.surface}
-                      borderRadius={RADII.md}
-                      py={SPACING.sm}
-                      px={SPACING.base}
-                      justifyContent="center"
-                      alignItems="center"
-                      onPress={() => submitVote('accurate')}
-                      disabled={votingLoading}
-                      opacity={votingLoading ? 0.6 : 1}
-                    >
-                      <Text
-                        fontSize={12}
-                        color={userVote === 'accurate' ? COLORS.white : COLORS.text}
-                        fontWeight="600"
+                <Box bg={COLORS.background} borderRadius={RADII.md} p={SPACING.sm} borderWidth={1} borderColor={COLORS.border}>
+                  <VStack space="sm">
+                    <Text fontSize={12} color={COLORS.text} fontWeight="600" textAlign="center">
+                      Is this report accurate?
+                    </Text>
+                    <HStack space="sm">
+                      <Pressable
+                        flex={1}
+                        bg={userVote === 'accurate' ? '#10B981' : COLORS.white}
+                        borderRadius={RADII.md}
+                        py={SPACING.sm}
+                        px={SPACING.sm}
+                        justifyContent="center"
+                        alignItems="center"
+                        onPress={() => submitVote('accurate')}
+                        disabled={votingLoading}
+                        opacity={votingLoading ? 0.6 : 1}
+                        borderWidth={2}
+                        borderColor={userVote === 'accurate' ? '#10B981' : '#10B981'}
+                        style={SHADOWS.sm}
                       >
-                        ✓ Accurate
-                      </Text>
-                    </Pressable>
+                        <Text
+                          fontSize={11}
+                          color={userVote === 'accurate' ? COLORS.white : '#10B981'}
+                          fontWeight="700"
+                        >
+                          ✓ Yes
+                        </Text>
+                      </Pressable>
 
-                    <Pressable
-                      flex={1}
-                      bg={userVote === 'inaccurate' ? '#EF4444' : COLORS.surface}
-                      borderRadius={RADII.md}
-                      py={SPACING.sm}
-                      px={SPACING.base}
-                      justifyContent="center"
-                      alignItems="center"
-                      onPress={() => submitVote('inaccurate')}
-                      disabled={votingLoading}
-                      opacity={votingLoading ? 0.6 : 1}
-                    >
-                      <Text
-                        fontSize={12}
-                        color={userVote === 'inaccurate' ? COLORS.white : COLORS.text}
-                        fontWeight="600"
+                      <Pressable
+                        flex={1}
+                        bg={userVote === 'inaccurate' ? '#EF4444' : COLORS.white}
+                        borderRadius={RADII.md}
+                        py={SPACING.sm}
+                        px={SPACING.sm}
+                        justifyContent="center"
+                        alignItems="center"
+                        onPress={() => submitVote('inaccurate')}
+                        disabled={votingLoading}
+                        opacity={votingLoading ? 0.6 : 1}
+                        borderWidth={2}
+                        borderColor={userVote === 'inaccurate' ? '#EF4444' : '#EF4444'}
+                        style={SHADOWS.sm}
                       >
-                        ✗ Inaccurate
-                      </Text>
-                    </Pressable>
+                        <Text
+                          fontSize={11}
+                          color={userVote === 'inaccurate' ? COLORS.white : '#EF4444'}
+                          fontWeight="700"
+                        >
+                          ✗ No
+                        </Text>
+                      </Pressable>
 
-                    <Pressable
-                      flex={1}
-                      bg={userVote === 'unclear' ? '#F59E0B' : COLORS.surface}
-                      borderRadius={RADII.md}
-                      py={SPACING.sm}
-                      px={SPACING.base}
-                      justifyContent="center"
-                      alignItems="center"
-                      onPress={() => submitVote('unclear')}
-                      disabled={votingLoading}
-                      opacity={votingLoading ? 0.6 : 1}
-                    >
-                      <Text
-                        fontSize={12}
-                        color={userVote === 'unclear' ? COLORS.white : COLORS.text}
-                        fontWeight="600"
+                      <Pressable
+                        flex={1}
+                        bg={userVote === 'unclear' ? '#F59E0B' : COLORS.white}
+                        borderRadius={RADII.md}
+                        py={SPACING.sm}
+                        px={SPACING.sm}
+                        justifyContent="center"
+                        alignItems="center"
+                        onPress={() => submitVote('unclear')}
+                        disabled={votingLoading}
+                        opacity={votingLoading ? 0.6 : 1}
+                        borderWidth={2}
+                        borderColor={userVote === 'unclear' ? '#F59E0B' : '#F59E0B'}
+                        style={SHADOWS.sm}
                       >
-                        ? Unclear
-                      </Text>
-                    </Pressable>
-                  </HStack>
-                </VStack>
+                        <Text
+                          fontSize={11}
+                          color={userVote === 'unclear' ? COLORS.white : '#F59E0B'}
+                          fontWeight="700"
+                        >
+                          ? Unclear
+                        </Text>
+                      </Pressable>
+                    </HStack>
+                  </VStack>
+                </Box>
               </VStack>
+              </Box>
             </VStack>
           </ModalBody>
           <ModalFooter borderTopWidth={1} borderTopColor={COLORS.borderLight} pt={SPACING.base}>

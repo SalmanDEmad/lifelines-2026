@@ -67,7 +67,23 @@
     "safetyWarning": "تحذير السلامة",
     "safetyMessage": "لا تعرض نفسك للخطر عند التقاط الصور. ابق بعيداً عن الهياكل غير المستقرة والمواد الخطرة والمناطق الخطرة. سلامتك هي الأولوية.",
     "proceedToPhoto": "أفهم، التقط صورة",
-    "rubbleType": "نوع الركام"
+    "rubbleType": "نوع الركام",
+    "materialsRequired": "الأنقاض - اختر المواد (مطلوب)",
+    "hazardsOptional": "المخاطر - اختر أي منها (اختياري)",
+    "materialsSelected": "تم اختيار {count} مادة (مواد)",
+    "hazardsIdentified": "تم تحديد {count} خطر (مخاطر)"
+  },
+  "materials": {
+    "concrete": "خرسانة",
+    "wood": "خشب",
+    "metal": "معدن"
+  },
+  "hazards": {
+    "uxo": "ذخائر غير منفجرة",
+    "bodies": "رفات بشرية",
+    "chemicals": "مواد كيميائية",
+    "electrical": "خطر كهربائي",
+    "blocked_road": "طريق مسدود"
   },
   "map": {
     "title": "تقاريرك",
