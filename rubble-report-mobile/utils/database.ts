@@ -48,6 +48,7 @@ export interface Report {
   timestamp: number;
   synced: 0 | 1;
   user_id?: string;
+  is_demo?: 0 | 1;
 }
 
 export const initDatabase = async (): Promise<void> => {
@@ -66,7 +67,8 @@ export const initDatabase = async (): Promise<void> => {
         description TEXT,
         timestamp INTEGER,
         synced INTEGER,
-        user_id TEXT
+        user_id TEXT,
+        is_demo INTEGER DEFAULT 0
       );`
     );
     
@@ -83,6 +85,21 @@ export const initDatabase = async (): Promise<void> => {
     } catch (error) {
       // Ignore PRAGMA errors, column might already exist
       console.log('Column check skipped (new table)');
+    }
+
+    // Check if is_demo column exists, if not add it
+    try {
+      const result = await database.getFirstAsync<any>(
+        `PRAGMA table_info(reports) WHERE name='is_demo';`
+      );
+      
+      if (!result) {
+        console.log('Adding is_demo column to existing reports table...');
+        await database.runAsync(`ALTER TABLE reports ADD COLUMN is_demo INTEGER DEFAULT 0;`);
+      }
+    } catch (error) {
+      // Ignore PRAGMA errors, column might already exist
+      console.log('is_demo column check skipped');
     }
     
     console.log('Database initialized successfully');
@@ -222,6 +239,29 @@ export const deleteReport = async (reportId: string): Promise<void> => {
     console.log('Report deleted:', reportId);
   } catch (error) {
     console.error('Error deleting report:', error);
+    throw error;
+  }
+};
+
+export const clearNonDemoReports = async (): Promise<number> => {
+  try {
+    const database = await getDB();
+    
+    // Count how many reports will be deleted
+    const countResult = await database.getFirstAsync<any>(
+      `SELECT COUNT(*) as count FROM reports WHERE is_demo = 0 OR is_demo IS NULL`
+    );
+    const deletedCount = countResult?.count || 0;
+    
+    // Delete all non-demo reports
+    await database.runAsync(
+      `DELETE FROM reports WHERE is_demo = 0 OR is_demo IS NULL`
+    );
+    
+    console.log(`Cleared ${deletedCount} non-demo reports from database`);
+    return deletedCount;
+  } catch (error) {
+    console.error('Error clearing non-demo reports:', error);
     throw error;
   }
 };

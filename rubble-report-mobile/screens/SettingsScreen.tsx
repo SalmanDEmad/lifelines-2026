@@ -180,6 +180,36 @@ const SettingsScreen = () => {
     }
   };
 
+  const handleClearAllData = async () => {
+    // Count non-demo reports (where is_demo is undefined, 0, or falsy)
+    const nonDemoCount = localReports.filter((r) => r.is_demo !== 1).length;
+    const demoCount = localReports.filter((r) => r.is_demo === 1).length;
+
+    Alert.alert(
+      'Clear All Data',
+      `This will delete ${nonDemoCount} reports you've created.\n\nDemo reports (${demoCount}) will be preserved.\n\nThis action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All Data',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const deletedCount = await useReportStore.getState().clearNonDemoReports();
+              Alert.alert('Data Cleared', `Deleted ${deletedCount} reports. Demo data preserved.`);
+            } catch (error) {
+              console.error('Error clearing data:', error);
+              Alert.alert('Error', 'Failed to clear data. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const SectionTitle = ({ title }: { title: string }) => (
     <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>
       {title}
@@ -468,6 +498,26 @@ const SettingsScreen = () => {
           <Text style={styles.buttonText}>
             Debug: Show Storage Values
           </Text>
+        </TouchableOpacity>
+
+        {/* Clear All Data Button */}
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: '#DC2626', marginTop: 12 }]}
+          onPress={handleClearAllData}
+          activeOpacity={0.7}
+          disabled={loading || localReports.length === 0}
+          accessible={true}
+          accessibilityLabel="Clear All Data"
+          accessibilityHint={`Delete ${localReports.filter((r) => r.is_demo !== 1).length} user reports while keeping demo data`}
+          accessibilityRole="button"
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>
+              Clear All Data ({localReports.filter((r) => r.is_demo !== 1).length})
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* Logout Button */}

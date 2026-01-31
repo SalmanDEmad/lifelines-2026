@@ -368,6 +368,7 @@ const MapScreen = () => {
       longitude: report.lng,
       description: report.description,
       timestamp: Date.now() - (index * 60000), // Stagger timestamps
+      is_demo: 1, // Mark as demo to persist during data clearing
     }));
 
     console.log('Creating', demoReports.length, 'demo reports for region:', selectedRegion);

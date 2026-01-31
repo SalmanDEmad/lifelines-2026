@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Report, getAllReports, saveReport as dbSaveReport, getUnsyncedReports as dbGetUnsyncedReports, markSynced as dbMarkSynced, deleteReport as dbDeleteReport } from '../utils/database';
+import { Report, getAllReports, saveReport as dbSaveReport, getUnsyncedReports as dbGetUnsyncedReports, markSynced as dbMarkSynced, deleteReport as dbDeleteReport, clearNonDemoReports as dbClearNonDemoReports } from '../utils/database';
 
 interface ReportState {
   localReports: Report[];
@@ -15,6 +15,7 @@ interface ReportState {
   clearCurrentReport: () => void;
   deleteLocalReport: (reportId: string) => Promise<void>;
   setIsSyncing: (syncing: boolean) => void;
+  clearNonDemoReports: () => Promise<number>;
 }
 
 export const useReportStore = create<ReportState>((set, get) => ({
@@ -93,5 +94,17 @@ export const useReportStore = create<ReportState>((set, get) => ({
 
   setIsSyncing: (syncing: boolean) => {
     set({ isSyncing: syncing });
+  },
+
+  clearNonDemoReports: async () => {
+    try {
+      const deletedCount = await dbClearNonDemoReports();
+      // Reload reports to update the state
+      await get().loadReportsFromDB();
+      return deletedCount;
+    } catch (error) {
+      console.error('Error clearing non-demo reports:', error);
+      throw error;
+    }
   },
 }));
