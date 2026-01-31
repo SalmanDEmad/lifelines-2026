@@ -273,9 +273,12 @@ const ReportScreen = () => {
 
   // Reusable Components
   const SectionHeading = ({ children }: { children: string }) => (
-    <Text fontSize={16} color={COLORS.text} fontWeight="600" mb={SPACING.sm}>
-      {children}
-    </Text>
+    <VStack space="xs" mb={SPACING.base}>
+      <Text fontSize={15} color={COLORS.textSecondary} fontWeight="500" textTransform="uppercase" letterSpacing={0.5}>
+        {children}
+      </Text>
+      <Box height={2} width="100%" bg={COLORS.primary} borderRadius={RADII.full} />
+    </VStack>
   );
 
   const PrimaryButton = ({ 
@@ -366,39 +369,39 @@ const ReportScreen = () => {
     onToggle: (id: string) => void;
   }) => (
     <Pressable
-      py={SPACING.sm}
-      px={SPACING.md}
-      borderRadius={RADII.md}
+      py={SPACING.base}
+      px={SPACING.lg}
+      borderRadius={RADII.lg}
       bg={isSelected ? color : COLORS.surface}
-      borderWidth={isSelected ? 0 : 1}
-      borderColor={COLORS.border}
+      borderWidth={2}
+      borderColor={isSelected ? color : COLORS.border}
       onPress={() => onToggle(id)}
       minHeight={LAYOUT.minTouchTarget}
       justifyContent="center"
-      style={isSelected ? SHADOWS.sm : {}}
+      style={isSelected ? { ...SHADOWS.md, elevation: 5 } : {}}
       accessible={true}
       accessibilityLabel={label}
       accessibilityHint={isSelected ? `${label} is selected` : `Select ${label}`}
       accessibilityRole="radio"
       accessibilityState={{ selected: isSelected }}
     >
-      <HStack space="sm" alignItems="center" justifyContent="center">
+      <HStack space="md" alignItems="center" justifyContent="center">
         {IconComponent && (
           <IconComponent 
-            size={18} 
+            size={20} 
             color={isSelected ? COLORS.white : color} 
           />
         )}
-        {isSelected && (
-          <Icons.Synced size={ICON_SIZES.sm} color={COLORS.white} />
-        )}
         <Text
           color={isSelected ? COLORS.white : COLORS.text}
-          fontWeight="600"
-          fontSize={13}
+          fontWeight="700"
+          fontSize={14}
         >
           {label}
         </Text>
+        {isSelected && (
+          <Icons.Synced size={ICON_SIZES.sm} color={COLORS.white} style={{ marginLeft: 4 }} />
+        )}
       </HStack>
     </Pressable>
   );
@@ -417,7 +420,7 @@ const ReportScreen = () => {
           </Heading>
 
           {/* Materials Section */}
-          <VStack space="sm">
+          <VStack space="md">
             <SectionHeading>{t('report.materialsRequired') || 'Rubble - Select Materials (Required)'}</SectionHeading>
             <VStack space="sm">
               {MATERIALS.map((material) => {
@@ -436,14 +439,16 @@ const ReportScreen = () => {
               })}
             </VStack>
             {selectedMaterials.length > 0 && (
-              <Text fontSize={12} color={COLORS.success}>
-                ✓ {selectedMaterials.length} {t('report.materialsSelected')?.replace('{count}', '') || 'material(s) selected'}
-              </Text>
+              <Box bg={COLORS.successLight} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
+                <Text fontSize={13} color={COLORS.success} fontWeight="600">
+                  ✓ {selectedMaterials.length} {t('report.materialsSelected')?.replace('{count}', '') || 'material(s) selected'}
+                </Text>
+              </Box>
             )}
           </VStack>
 
           {/* Hazards Section (Optional) */}
-          <VStack space="sm">
+          <VStack space="md">
             <SectionHeading>{t('report.hazardsOptional') || 'Hazards - Select Any (Optional)'}</SectionHeading>
             <VStack space="sm">
               {HAZARDS.map((hazard) => {
@@ -462,9 +467,11 @@ const ReportScreen = () => {
               })}
             </VStack>
             {selectedHazards.length > 0 && (
-              <Text fontSize={12} color={COLORS.success}>
-                ✓ {selectedHazards.length} {t('report.hazardsIdentified')?.replace('{count}', '') || 'hazard(s) identified'}
-              </Text>
+              <Box bg={COLORS.successLight} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
+                <Text fontSize={13} color={COLORS.success} fontWeight="600">
+                  ✓ {selectedHazards.length} {t('report.hazardsIdentified')?.replace('{count}', '') || 'hazard(s) identified'}
+                </Text>
+              </Box>
             )}
           </VStack>
 
