@@ -24,18 +24,19 @@ import { isInGaza, isInPalestineRegion } from '../utils/geospatial';
 
 // Material types for rubble - using native emoji display
 const MATERIALS = [
-  { id: 'concrete', label: 'Concrete', emoji: '🏛️', color: '#64748B', icon: '🧱' },
-  { id: 'wood', label: 'Wood', emoji: '🪵', color: '#92400E', icon: '🌲' },
-  { id: 'metal', label: 'Metal', emoji: '⚙️', color: '#475569', icon: '🔩' },
+  { id: 'concrete', label: 'Concrete', emoji: '🏛️', color: '#64748B', bgTint: '#F1F5F9' },
+  { id: 'wood', label: 'Wood', emoji: '🪵', color: '#92400E', bgTint: '#FEF3C7' },
+  { id: 'metal', label: 'Metal', emoji: '⚙️', color: '#475569', bgTint: '#E2E8F0' },
 ];
 
-// Optional hazards with emojis
+// Optional hazards with emojis - danger colors
 const HAZARDS = [
-  { id: 'uxo', label: 'UXOs', emoji: '💣', color: '#DC2626', icon: '⚠️' },
-  { id: 'bodies', label: 'Human Remains', emoji: '🧎', color: '#7C3AED', icon: '🚨' },
-  { id: 'chemicals', label: 'Chemicals', emoji: '🧪', color: '#F59E0B', icon: '☢️' },
-  { id: 'electrical', label: 'Electrical Hazard', emoji: '⚡', color: '#EF4444', icon: '🔌' },
-  { id: 'blocked_road', label: 'Blocked Road', emoji: '🛣️', color: '#92400E', icon: '🚧' },
+  { id: 'uxo', label: 'UXOs', emoji: '💣', color: '#DC2626', bgTint: '#FEE2E2' },
+  { id: 'bodies', label: 'Bodies', emoji: '🧎', color: '#7C3AED', bgTint: '#EDE9FE' },
+  { id: 'chemicals', label: 'Chemicals', emoji: '🧪', color: '#F59E0B', bgTint: '#FEF3C7' },
+  { id: 'electrical', label: 'Electric', emoji: '⚡', color: '#EF4444', bgTint: '#FEE2E2' },
+  { id: 'blocked_road', label: 'Road Block', emoji: '🚧', color: '#92400E', bgTint: '#FFEDD5' },
+  { id: 'gas_leak', label: 'Gas Leak', emoji: '💨', color: '#059669', bgTint: '#D1FAE5' },
 ];
 
 const ReportScreen = () => {
@@ -271,13 +272,52 @@ const ReportScreen = () => {
   };
 
   // Reusable Components
-  const SectionHeading = ({ children }: { children: string }) => (
-    <VStack space="xs" mb={SPACING.base}>
-      <Text fontSize={15} color={COLORS.textSecondary} fontWeight="500" textTransform="uppercase" letterSpacing={0.5}>
+  
+  // Progress indicator
+  const getProgress = () => {
+    let steps = 0;
+    if (imageUri) steps++;
+    if (selectedMaterials.length > 0) steps++;
+    if (description.length > 0) steps++;
+    return steps;
+  };
+  
+  const ProgressBar = () => {
+    const progress = getProgress();
+    const total = 3;
+    return (
+      <VStack space="xs">
+        <HStack justifyContent="space-between">
+          <Text fontSize={12} color={COLORS.textSecondary}>
+            {progress === 0 ? 'Start by taking a photo' : progress === total ? 'Ready to submit!' : `${progress}/${total} completed`}
+          </Text>
+          <Text fontSize={12} color={COLORS.primary} fontWeight="600">
+            {Math.round((progress / total) * 100)}%
+          </Text>
+        </HStack>
+        <Box height={4} bg={COLORS.border} borderRadius={RADII.full} overflow="hidden">
+          <Box 
+            height="100%" 
+            width={`${(progress / total) * 100}%`}
+            bg={progress === total ? COLORS.success : COLORS.primary}
+            borderRadius={RADII.full}
+          />
+        </Box>
+      </VStack>
+    );
+  };
+
+  const SectionLabel = ({ children, required = false }: { children: string; required?: boolean }) => (
+    <HStack space="sm" alignItems="center" mb={SPACING.sm}>
+      <Text fontSize={16} color={COLORS.text} fontWeight="600">
         {children}
       </Text>
-      <Box height={2} width="100%" bg={COLORS.primary} borderRadius={RADII.full} />
-    </VStack>
+      {required && (
+        <Box bg="#FEE2E2" px={8} py={2} borderRadius={RADII.full}>
+          <Text fontSize={10} color="#DC2626" fontWeight="700">REQUIRED</Text>
+        </Box>
+      )}
+    </HStack>
   );
 
   const PrimaryButton = ({ 
@@ -357,277 +397,280 @@ const ReportScreen = () => {
     label, 
     color, 
     emoji,
+    bgTint,
     isSelected, 
-    onToggle 
+    onToggle,
+    size = 'normal'
   }: { 
     id: string; 
     label: string; 
     color: string;
     emoji: string;
+    bgTint?: string;
     isSelected: boolean;
     onToggle: (id: string) => void;
-  }) => (
-    <Pressable
-      flex={1}
-      minWidth="30%"
-      aspectRatio={1}
-      borderRadius={RADII.xl}
-      bg={isSelected ? color : COLORS.white}
-      borderWidth={3}
-      borderColor={isSelected ? color : COLORS.border}
-      onPress={() => onToggle(id)}
-      justifyContent="center"
-      alignItems="center"
-      style={isSelected ? { ...SHADOWS.lg, elevation: 8 } : SHADOWS.sm}
-      accessible={true}
-      accessibilityLabel={label}
-      accessibilityHint={isSelected ? `${label} is selected` : `Select ${label}`}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: isSelected }}
-    >
-      <VStack alignItems="center" space="sm">
-        <Text fontSize={36} style={{ lineHeight: 44 }}>
-          {emoji}
-        </Text>
-        <Text
-          color={isSelected ? COLORS.white : COLORS.text}
-          fontWeight="700"
-          fontSize={13}
-          textAlign="center"
-          numberOfLines={2}
-        >
-          {label}
-        </Text>
+    size?: 'normal' | 'small';
+  }) => {
+    const isSmall = size === 'small';
+    return (
+      <Pressable
+        width={isSmall ? '31%' : '31%'}
+        py={isSmall ? SPACING.md : SPACING.lg}
+        borderRadius={RADII.xl}
+        bg={isSelected ? color : (bgTint || COLORS.surface)}
+        borderWidth={isSelected ? 3 : 2}
+        borderColor={isSelected ? color : (bgTint ? color + '40' : COLORS.border)}
+        onPress={() => onToggle(id)}
+        justifyContent="center"
+        alignItems="center"
+        style={isSelected ? { ...SHADOWS.lg, elevation: 8, transform: [{ scale: 1.02 }] } : SHADOWS.sm}
+        accessible={true}
+        accessibilityLabel={label}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isSelected }}
+      >
+        <VStack alignItems="center" space="xs">
+          <Text fontSize={isSmall ? 28 : 32} style={{ lineHeight: isSmall ? 34 : 40 }}>
+            {emoji}
+          </Text>
+          <Text
+            color={isSelected ? COLORS.white : COLORS.text}
+            fontWeight="700"
+            fontSize={isSmall ? 11 : 12}
+            textAlign="center"
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        </VStack>
         {isSelected && (
           <Box 
             position="absolute" 
-            top={8} 
-            right={8}
-            bg="rgba(255,255,255,0.3)"
+            top={6} 
+            right={6}
+            bg="rgba(255,255,255,0.4)"
             borderRadius={RADII.full}
-            p={4}
+            p={3}
           >
-            <Icons.Synced size={16} color={COLORS.white} />
+            <Icons.Synced size={12} color={COLORS.white} />
           </Box>
         )}
-      </VStack>
-    </Pressable>
-  );
+      </Pressable>
+    );
+  };
 
   return (
-    <ScrollView flex={1} bg={COLORS.background}>
-      <Box 
-        px={LAYOUT.screenPaddingHorizontal} 
-        pt={LAYOUT.screenPaddingTop}
-        pb={SPACING['3xl']}
-      >
-        <VStack space="xl">
-          {/* Header */}
-          <Heading fontSize={28} color={COLORS.text} fontWeight="700">
-            {t('report.title')}
-          </Heading>
+    <Box flex={1} bg={COLORS.background}>
+      <ScrollView flex={1}>
+        <Box 
+          px={LAYOUT.screenPaddingHorizontal} 
+          pt={SPACING.lg}
+          pb={120}
+        >
+          <VStack space="lg">
+            {/* Header */}
+            <VStack space="sm">
+              <Text fontSize={13} color={COLORS.textSecondary} fontWeight="500">
+                📍 {userZone || 'Loading zone...'}
+              </Text>
+              <Heading fontSize={26} color={COLORS.text} fontWeight="800">
+                What did you see?
+              </Heading>
+              <ProgressBar />
+            </VStack>
 
-          {/* Materials Section */}
-          <VStack space="md">
-            <SectionHeading>{t('report.materialsRequired') || 'Materials (Required)'}</SectionHeading>
-            <HStack flexWrap="wrap" justifyContent="space-between" style={{ gap: 12 }}>
-              {MATERIALS.map((material) => {
-                const isSelected = selectedMaterials.includes(material.id);
-                return (
-                  <TagButton
-                    key={material.id}
-                    id={material.id}
-                    label={t(`materials.${material.id}`) || material.label}
-                    color={material.color}
-                    emoji={material.emoji}
-                    isSelected={isSelected}
-                    onToggle={toggleMaterial}
-                  />
-                );
-              })}
-            </HStack>
-            {selectedMaterials.length > 0 && (
-              <Box bg={COLORS.successLight} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
-                <Text fontSize={13} color={COLORS.success} fontWeight="600">
-                  ✓ {selectedMaterials.length} material(s) selected
-                </Text>
-              </Box>
-            )}
-          </VStack>
+            {/* STEP 1: Camera Section - FIRST */}
+            <VStack space="sm">
+              <SectionLabel required>📸 Take a Photo</SectionLabel>
+              {imageUri ? (
+                <VStack space="sm">
+                  <Box borderRadius={RADII.xl} overflow="hidden" style={SHADOWS.lg}>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={{ width: '100%', height: 220 }}
+                      alt="report-photo"
+                    />
+                    <Box position="absolute" bottom={12} right={12}>
+                      <Pressable 
+                        bg="rgba(0,0,0,0.6)" 
+                        px={SPACING.md} 
+                        py={SPACING.sm}
+                        borderRadius={RADII.full}
+                        onPress={retakePhoto}
+                      >
+                        <HStack space="xs" alignItems="center">
+                          <Icons.Camera size={14} color={COLORS.white} />
+                          <Text fontSize={12} color={COLORS.white} fontWeight="600">Retake</Text>
+                        </HStack>
+                      </Pressable>
+                    </Box>
+                  </Box>
+                  <Box bg="#D1FAE5" borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
+                    <Text fontSize={12} color="#059669" fontWeight="600">
+                      ✓ Photo captured {imageSize && `(${imageSize}KB)`}
+                    </Text>
+                  </Box>
+                </VStack>
+              ) : (
+                <Pressable
+                  bg="#EFF6FF"
+                  borderRadius={RADII.xl}
+                  py={SPACING['2xl']}
+                  alignItems="center"
+                  justifyContent="center"
+                  onPress={takePhoto}
+                  borderWidth={2}
+                  borderColor="#3B82F6"
+                  borderStyle="dashed"
+                  minHeight={180}
+                  style={SHADOWS.sm}
+                >
+                  <Box 
+                    bg="#3B82F6" 
+                    p={SPACING.lg} 
+                    borderRadius={RADII.full}
+                    mb={SPACING.md}
+                  >
+                    <Icons.Camera size={32} color={COLORS.white} />
+                  </Box>
+                  <Text fontSize={16} color="#3B82F6" fontWeight="700">
+                    Tap to take a photo
+                  </Text>
+                  <Text fontSize={12} color={COLORS.textSecondary} mt={SPACING.xs}>
+                    This helps verify the report
+                  </Text>
+                </Pressable>
+              )}
+            </VStack>
 
-          {/* Hazards Section (Optional) */}
-          <VStack space="md">
-            <SectionHeading>{t('report.hazardsOptional') || 'Hazards (Optional)'}</SectionHeading>
-            <HStack flexWrap="wrap" justifyContent="flex-start" style={{ gap: 12 }}>
-              {HAZARDS.map((hazard) => {
-                const isSelected = selectedHazards.includes(hazard.id);
-                return (
-                  <Box key={hazard.id} width="30%">
+            {/* STEP 2: Materials Section */}
+            <VStack space="sm">
+              <SectionLabel required>🧱 What materials?</SectionLabel>
+              <HStack flexWrap="wrap" justifyContent="space-between" style={{ gap: 10 }}>
+                {MATERIALS.map((material) => {
+                  const isSelected = selectedMaterials.includes(material.id);
+                  return (
                     <TagButton
+                      key={material.id}
+                      id={material.id}
+                      label={t(`materials.${material.id}`) || material.label}
+                      color={material.color}
+                      emoji={material.emoji}
+                      bgTint={material.bgTint}
+                      isSelected={isSelected}
+                      onToggle={toggleMaterial}
+                    />
+                  );
+                })}
+              </HStack>
+            </VStack>
+
+            {/* STEP 3: Hazards Section */}
+            <VStack space="sm">
+              <SectionLabel>⚠️ Any hazards?</SectionLabel>
+              <HStack flexWrap="wrap" justifyContent="flex-start" style={{ gap: 8 }}>
+                {HAZARDS.map((hazard) => {
+                  const isSelected = selectedHazards.includes(hazard.id);
+                  return (
+                    <TagButton
+                      key={hazard.id}
                       id={hazard.id}
                       label={t(`hazards.${hazard.id}`) || hazard.label}
                       color={hazard.color}
                       emoji={hazard.emoji}
+                      bgTint={hazard.bgTint}
                       isSelected={isSelected}
                       onToggle={toggleHazard}
+                      size="small"
                     />
-                  </Box>
-                );
-              })}
-            </HStack>
-            {selectedHazards.length > 0 && (
-              <Box bg={COLORS.warningLight || '#FEF3C7'} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
-                <Text fontSize={13} color={COLORS.warning || '#D97706'} fontWeight="600">
-                  ⚠️ {selectedHazards.length} hazard(s) identified
-                </Text>
-              </Box>
-            )}
-          </VStack>
-
-          {/* Camera Section */}
-          <VStack space="sm">
-            <SectionHeading>{t('report.photo')}</SectionHeading>
-            {imageUri ? (
-              <VStack space="md">
-                <Box borderRadius={RADII.lg} overflow="hidden" style={SHADOWS.md}>
-                  <Image
-                    source={{ uri: imageUri }}
-                    style={{ width: '100%', height: 280 }}
-                    alt="report-photo"
-                  />
-                </Box>
-                {imageSize && (
-                  <HStack justifyContent="space-between">
-                    <HStack space="xs">
-                      <Box justifyContent="center">
-                        <Icons.Photo size={ICON_SIZES.sm} color={COLORS.textSecondary} />
-                      </Box>
-                      <Box justifyContent="center">
-                        <Text fontSize={12} color={COLORS.textSecondary}>
-                          Size: {imageSize}KB{imageSize > 500 && ' (large)'}
-                        </Text>
-                      </Box>
-                    </HStack>
-                    <SecondaryButton onPress={retakePhoto} label={t('report.retakePhoto')} />
-                  </HStack>
-                )}
-              </VStack>
-            ) : (
-              <Pressable
-                bg={COLORS.surface}
-                borderRadius={RADII.lg}
-                py={SPACING['2xl']}
-                alignItems="center"
-                justifyContent="center"
-                onPress={takePhoto}
-                borderWidth={2}
-                borderColor={COLORS.border}
-                borderStyle="dashed"
-                minHeight={160}
-              >
-                <Icons.Camera size={ICON_SIZES.xl} color={COLORS.textSecondary} />
-                <Text fontSize={14} color={COLORS.textSecondary} mt={SPACING.sm}>
-                  {t('report.tapToPhoto') || 'Tap to take a photo'}
-                </Text>
-              </Pressable>
-            )}
-          </VStack>
-
-          {/* Description Section */}
-          <VStack space="sm">
-            <SectionHeading>{t('report.description')}</SectionHeading>
-            <Box
-              bg={COLORS.white}
-              borderColor={COLORS.border}
-              borderWidth={1}
-              borderRadius={RADII.md}
-              p={SPACING.sm}
-            >
-              <Input
-                variant="outline"
-                h={100}
-                borderWidth={0}
-              >
-                <InputField
-                  placeholder={t('report.descriptionPlaceholder')}
-                  placeholderTextColor={COLORS.textMuted}
-                  value={description}
-                  onChangeText={setDescription}
-                  maxLength={300}
-                  multiline
-                  fontSize={14}
-                  color={COLORS.text}
-                />
-              </Input>
-            </Box>
-            <Text fontSize={11} color={COLORS.textMuted} textAlign="right">
-              {description.length}/300
-            </Text>
-          </VStack>
-
-          {/* Location Section */}
-          <VStack space="sm">
-            <SectionHeading>{t('report.location')}</SectionHeading>
-            <Box
-              bg={COLORS.surface}
-              borderRadius={RADII.lg}
-              p={SPACING.base}
-              borderStartWidth={4}
-              borderStartColor={COLORS.success}
-              style={SHADOWS.sm}
-            >
-              <HStack space="md">
-                <Box justifyContent="center">
-                  <Icons.Location size={ICON_SIZES.lg} color={COLORS.success} />
-                </Box>
-                <VStack flex={1} space="xs" justifyContent="center">
-                  <Text fontSize={12} color={COLORS.textSecondary}>
-                    📍 Random coordinates (privacy protected)
-                  </Text>
-                  <Text fontSize={14} color={COLORS.text} fontWeight="600">
-                    Zone: {userZone}
-                  </Text>
-                </VStack>
+                  );
+                })}
               </HStack>
-            </Box>
-          </VStack>
+              {selectedHazards.length > 0 && (
+                <Box bg={COLORS.warningLight} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
+                  <Text fontSize={12} color="#B45309" fontWeight="600">
+                    ⚠️ {selectedHazards.length} hazard(s) will be flagged for urgent attention
+                  </Text>
+                </Box>
+              )}
+            </VStack>
 
-          {/* Status Section */}
-          <Box
-            bg={COLORS.surface}
-            borderRadius={RADII.lg}
-            p={SPACING.base}
-            borderStartWidth={4}
-            borderStartColor={COLORS.success}
-          >
-            <HStack space="md">
-              <Box justifyContent="center">
-                <Icons.Stats size={ICON_SIZES.lg} color={COLORS.success} />
+            {/* Optional: Description */}
+            <VStack space="sm">
+              <SectionLabel>💬 Add details (optional)</SectionLabel>
+              <Box
+                bg={COLORS.white}
+                borderColor={COLORS.border}
+                borderWidth={1}
+                borderRadius={RADII.lg}
+                overflow="hidden"
+              >
+                <Input variant="outline" h={80} borderWidth={0}>
+                  <InputField
+                    placeholder="E.g., 3-story building, near the main road..."
+                    placeholderTextColor={COLORS.textMuted}
+                    value={description}
+                    onChangeText={setDescription}
+                    maxLength={200}
+                    multiline
+                    fontSize={14}
+                    color={COLORS.text}
+                    p={SPACING.md}
+                  />
+                </Input>
               </Box>
-              <VStack flex={1} justifyContent="center">
-                <Text fontSize={12} color={COLORS.textSecondary}>
-                  {t('report.status')}
-                </Text>
-                <Text fontSize={14} color={COLORS.text} fontWeight="500">
-                  {t('report.waiting', { count: unsyncedCount })}
-                </Text>
-              </VStack>
-            </HStack>
-          </Box>
+              <Text fontSize={11} color={COLORS.textMuted} textAlign="right">
+                {description.length}/200
+              </Text>
+            </VStack>
 
-          {/* Submit Button */}
-          <Box mt={SPACING.md}>
-            <PrimaryButton 
-              onPress={submitReport}
-              label={t('report.submit')}
-              disabled={selectedMaterials.length === 0 || !imageUri || loading}
-              isLoading={loading}
-              IconComponent={Icons.Upload}
-            />
-          </Box>
-        </VStack>
+          </VStack>
+        </Box>
+      </ScrollView>
+      
+      {/* Floating Submit Button */}
+      <Box 
+        position="absolute" 
+        bottom={0} 
+        left={0} 
+        right={0}
+        bg={COLORS.white}
+        px={LAYOUT.screenPaddingHorizontal}
+        py={SPACING.md}
+        style={{ 
+          ...SHADOWS.lg,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.border,
+        }}
+      >
+        <Pressable
+          bg={selectedMaterials.length === 0 || !imageUri ? COLORS.border : '#059669'}
+          borderRadius={RADII.lg}
+          py={SPACING.base}
+          justifyContent="center"
+          alignItems="center"
+          onPress={selectedMaterials.length === 0 || !imageUri || loading ? undefined : submitReport}
+          opacity={selectedMaterials.length === 0 || !imageUri ? 0.5 : 1}
+          style={selectedMaterials.length > 0 && imageUri ? SHADOWS.lg : {}}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={COLORS.white} />
+          ) : (
+            <HStack space="sm" alignItems="center">
+              <Icons.Upload size={20} color={COLORS.white} />
+              <Text fontSize={17} color={COLORS.white} fontWeight="700">
+                Submit Report
+              </Text>
+            </HStack>
+          )}
+        </Pressable>
+        {unsyncedCount > 0 && (
+          <Text fontSize={11} color={COLORS.textSecondary} textAlign="center" mt={SPACING.xs}>
+            {unsyncedCount} report(s) waiting to sync
+          </Text>
+        )}
       </Box>
-    </ScrollView>
+    </Box>
   );
 };
 
