@@ -209,9 +209,12 @@ const syncSingleReport = async (report: any): Promise<boolean> => {
       console.log(`[SYNC] Sending to Supabase:`, JSON.stringify(syncData, null, 2));
 
       // Insert directly to Supabase (anonymous inserts allowed via RLS policy)
+      // Use .select() to get the generated Supabase ID back
       const { data, error } = await supabase
         .from('reports')
-        .insert([syncData]);
+        .insert([syncData])
+        .select('id')
+        .single();
 
       if (error) {
         console.error(`[DB ERROR] Supabase insert failed:`, {
@@ -223,10 +226,20 @@ const syncSingleReport = async (report: any): Promise<boolean> => {
         throw error;
       }
 
-      console.log(`[SUCCESS] ✓ Report ${report.id} synced to Supabase`, { data });
+      const supabaseId = data?.id;
+      console.log(`[SUCCESS] ✓ Report ${report.id} synced to Supabase with ID: ${supabaseId}`, { data });
+      
+      // Update local database with Supabase ID so voting works
+      if (supabaseId && report.id !== supabaseId) {
+        console.log(`[SYNC] Updating local report ID: ${report.id} -> ${supabaseId}`);
+        const { updateReportId } = useReportStore.getState();
+        if (updateReportId) {
+          await updateReportId(report.id, supabaseId);
+        }
+      }
       
       // Send device-specific notification for this report
-      await notifyReportSynced(report.id, report.category);
+      await notifyReportSynced(supabaseId || report.id, report.category);
       
       return true;
 

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Phone, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { teamsApi } from '../lib/supabase';
+import { useTranslation } from '../lib/i18n';
 
 export default function Teams() {
+  const { t } = useTranslation();
   const [teams, setTeams] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ export default function Teams() {
     e.preventDefault();
     
     if (!teamFormData.name.trim()) {
-      alert('Please enter a team name');
+      alert(t('teams.enterTeamName'));
       return;
     }
 
@@ -66,7 +68,7 @@ export default function Teams() {
       setShowTeamModal(false);
     } catch (error) {
       console.error('Error creating team:', error);
-      alert('Failed to create team');
+      alert(t('teams.errorCreatingTeam'));
     }
   };
 
@@ -74,7 +76,7 @@ export default function Teams() {
     e.preventDefault();
     
     if (!memberFormData.name || !memberFormData.phone) {
-      alert('Please fill in all fields');
+      alert(t('teams.fillAllFields'));
       return;
     }
 
@@ -89,12 +91,12 @@ export default function Teams() {
       setShowMemberModal(false);
     } catch (error) {
       console.error('Error creating member:', error);
-      alert('Failed to add member');
+      alert(t('teams.errorAddingMember'));
     }
   };
 
   const handleDeleteMember = async (id) => {
-    if (!confirm('Are you sure you want to remove this member?')) return;
+    if (!confirm(t('teams.deleteMemberConfirm'))) return;
     
     try {
       console.log('[INFO] Attempting to delete member:', id);
@@ -103,12 +105,12 @@ export default function Teams() {
       setMembers(members.filter(m => m.id !== id));
     } catch (error) {
       console.error('Error deleting member:', error);
-      alert('Failed to delete member: ' + error.message);
+      alert(t('teams.errorDeletingMember'));
     }
   };
 
   const handleDeleteTeam = async (id) => {
-    if (!confirm('Are you sure you want to delete this team?')) return;
+    if (!confirm(t('teams.deleteTeamConfirm'))) return;
     
     try {
       console.log('[INFO] Attempting to delete team:', id);
@@ -118,7 +120,7 @@ export default function Teams() {
       setMembers(members.map(m => m.team_id === id ? { ...m, team_id: null } : m));
     } catch (error) {
       console.error('Error deleting team:', error);
-      alert('Failed to delete team: ' + error.message);
+      alert(t('teams.errorDeletingTeam'));
     }
   };
 
@@ -133,24 +135,24 @@ export default function Teams() {
   return (
     <div>
       <div className="page-header">
-        <h2>Teams</h2>
+        <h2>{t('teams.title')}</h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary" onClick={() => setShowTeamModal(true)}>
             <Plus size={16} />
-            New Team
+            {t('teams.createTeam')}
           </button>
           <button className="btn btn-secondary" onClick={() => setShowMemberModal(true)}>
             <Plus size={16} />
-            Add Member
+            {t('teams.addMember')}
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="loading">Loading teams...</div>
+        <div className="loading">{t('common.loading')}</div>
       ) : teams.length === 0 && members.length === 0 ? (
         <div className="empty-state" style={{ background: 'white', borderRadius: 12, padding: 40 }}>
-          <h4>No teams or members yet</h4>
+          <h4>{t('teams.noTeamsYet')}</h4>
           <p>Create a team and add members to organize your workforce.</p>
           <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'center' }}>
             <button 
@@ -340,7 +342,7 @@ export default function Teams() {
         <div className="modal-overlay" onClick={() => setShowTeamModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Create New Team</h3>
+              <h3>{t('teams.createTeam')}</h3>
               <button 
                 className="btn btn-sm btn-secondary"
                 onClick={() => setShowTeamModal(false)}
@@ -351,31 +353,31 @@ export default function Teams() {
             <form onSubmit={handleCreateTeam}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>Team Name</label>
+                  <label>{t('teams.teamName')}</label>
                   <input
                     type="text"
                     value={teamFormData.name}
                     onChange={(e) => setTeamFormData({ ...teamFormData, name: e.target.value })}
-                    placeholder="e.g., North Zone Team"
+                    placeholder={t('teams.teamNamePlaceholder')}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Team Contact Phone</label>
+                  <label>{t('teams.phone')}</label>
                   <input
                     type="tel"
                     value={teamFormData.phone}
                     onChange={(e) => setTeamFormData({ ...teamFormData, phone: e.target.value })}
-                    placeholder="e.g., +1 (123) 456-7890"
+                    placeholder={t('teams.phonePlaceholder')}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Team Description</label>
+                  <label>{t('teams.description')}</label>
                   <input
                     type="text"
                     value={teamFormData.description}
                     onChange={(e) => setTeamFormData({ ...teamFormData, description: e.target.value })}
-                    placeholder="e.g., Rescue and recovery team"
+                    placeholder={t('teams.descriptionPlaceholder')}
                   />
                 </div>
               </div>
@@ -385,11 +387,11 @@ export default function Teams() {
                   className="btn btn-secondary"
                   onClick={() => setShowTeamModal(false)}
                 >
-                  Cancel
+                  {t('teams.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">
                   <Plus size={16} />
-                  Create Team
+                  {t('teams.createTeam')}
                 </button>
               </div>
             </form>
@@ -402,7 +404,7 @@ export default function Teams() {
         <div className="modal-overlay" onClick={() => setShowMemberModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Add Team Member</h3>
+              <h3>{t('teams.addMember')}</h3>
               <button 
                 className="btn btn-sm btn-secondary"
                 onClick={() => setShowMemberModal(false)}
@@ -413,17 +415,17 @@ export default function Teams() {
             <form onSubmit={handleCreateMember}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>Full Name</label>
+                  <label>{t('auth.name')}</label>
                   <input
                     type="text"
                     value={memberFormData.name}
                     onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })}
-                    placeholder="John Doe"
+                    placeholder={t('auth.namePlaceholder')}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Phone Number</label>
+                  <label>{t('teams.phone')}</label>
                   <input
                     type="tel"
                     value={memberFormData.phone}
@@ -436,7 +438,7 @@ export default function Teams() {
                   <label>Assign to Team</label>
                   {teams.length === 0 ? (
                     <div style={{ padding: '10px', background: '#f0f0f0', borderRadius: '4px', fontSize: '14px', color: '#666' }}>
-                      No teams exist. Create a team first.
+                      {t('teams.noTeamsYet')}
                     </div>
                   ) : (
                     <select
@@ -457,11 +459,11 @@ export default function Teams() {
                   className="btn btn-secondary"
                   onClick={() => setShowMemberModal(false)}
                 >
-                  Cancel
+                  {t('teams.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">
                   <Plus size={16} />
-                  Add Member
+                  {t('teams.addMember')}
                 </button>
               </div>
             </form>

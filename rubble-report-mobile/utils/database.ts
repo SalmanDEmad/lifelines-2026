@@ -240,6 +240,20 @@ export const markSynced = async (reportId: string): Promise<void> => {
   }
 };
 
+export const updateReportId = async (oldId: string, newId: string): Promise<void> => {
+  try {
+    const database = await getDB();
+    await database.runAsync(
+      'UPDATE reports SET id = ?, synced = 1 WHERE id = ?',
+      [newId, oldId]
+    );
+    console.log(`Report ID updated: ${oldId} -> ${newId}`);
+  } catch (error) {
+    console.error('Error updating report ID:', error);
+    throw error;
+  }
+};
+
 export const deleteReport = async (reportId: string): Promise<void> => {
   try {
     const database = await getDB();

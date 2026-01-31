@@ -217,7 +217,7 @@ const ReportScreen = () => {
 
   const submitReport = async () => {
     if (selectedMaterials.length === 0) {
-      Alert.alert(t('report.missingInfo'), 'Please select at least one material type');
+      Alert.alert(t('report.missingInfo'), t('report.materialsRequired'));
       return;
     }
 
@@ -289,7 +289,7 @@ const ReportScreen = () => {
       <VStack space="xs">
         <HStack justifyContent="space-between">
           <Text fontSize={12} color={COLORS.textSecondary}>
-            {progress === 0 ? 'Start by taking a photo' : progress === total ? 'Ready to submit!' : `${progress}/${total} completed`}
+            {progress === 0 ? t('report.startByTakingPhoto') : progress === total ? t('report.readyToSubmit') : t('report.completed', { count: progress, total })}
           </Text>
           <Text fontSize={12} color={COLORS.primary} fontWeight="600">
             {Math.round((progress / total) * 100)}%
@@ -471,17 +471,17 @@ const ReportScreen = () => {
             {/* Header */}
             <VStack space="sm">
               <Text fontSize={13} color={COLORS.textSecondary} fontWeight="500">
-                📍 {userZone || 'Loading zone...'}
+                {t('report.reportingFrom', { zone: userZone || 'Loading zone...' })}
               </Text>
               <Heading fontSize={26} color={COLORS.text} fontWeight="800">
-                What did you see?
+                {t('report.titleSimple')}
               </Heading>
               <ProgressBar />
             </VStack>
 
             {/* STEP 1: Camera Section - FIRST */}
             <VStack space="sm">
-              <SectionLabel required>📸 Take a Photo</SectionLabel>
+              <SectionLabel required>{t('report.photo')}</SectionLabel>
               {imageUri ? (
                 <VStack space="sm">
                   <Box borderRadius={RADII.xl} overflow="hidden" style={SHADOWS.lg}>
@@ -500,14 +500,14 @@ const ReportScreen = () => {
                       >
                         <HStack space="xs" alignItems="center">
                           <Icons.Camera size={14} color={COLORS.white} />
-                          <Text fontSize={12} color={COLORS.white} fontWeight="600">Retake</Text>
+                          <Text fontSize={12} color={COLORS.white} fontWeight="600">{t('report.retakePhoto')}</Text>
                         </HStack>
                       </Pressable>
                     </Box>
                   </Box>
                   <Box bg="#D1FAE5" borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
                     <Text fontSize={12} color="#059669" fontWeight="600">
-                      ✓ Photo captured {imageSize && `(${imageSize}KB)`}
+                      ✓ {t('report.photoCaptured')} {imageSize && `(${imageSize}KB)`}
                     </Text>
                   </Box>
                 </VStack>
@@ -534,10 +534,10 @@ const ReportScreen = () => {
                     <Icons.Camera size={32} color={COLORS.white} />
                   </Box>
                   <Text fontSize={16} color="#3B82F6" fontWeight="700">
-                    Tap to take a photo
+                    {t('report.tapToPhoto')}
                   </Text>
                   <Text fontSize={12} color={COLORS.textSecondary} mt={SPACING.xs}>
-                    This helps verify the report
+                    {t('report.thisHelpsVerify')}
                   </Text>
                 </Pressable>
               )}
@@ -545,7 +545,7 @@ const ReportScreen = () => {
 
             {/* STEP 2: Materials Section */}
             <VStack space="sm">
-              <SectionLabel required>🧱 What materials?</SectionLabel>
+              <SectionLabel required>{t('report.selectMaterials')}</SectionLabel>
               <HStack flexWrap="wrap" justifyContent="space-between" style={{ gap: 10 }}>
                 {MATERIALS.map((material) => {
                   const isSelected = selectedMaterials.includes(material.id);
@@ -567,7 +567,7 @@ const ReportScreen = () => {
 
             {/* STEP 3: Hazards Section */}
             <VStack space="sm">
-              <SectionLabel>⚠️ Any hazards?</SectionLabel>
+              <SectionLabel>{t('report.selectHazards')}</SectionLabel>
               <HStack flexWrap="wrap" justifyContent="flex-start" style={{ gap: 8 }}>
                 {HAZARDS.map((hazard) => {
                   const isSelected = selectedHazards.includes(hazard.id);
@@ -597,7 +597,7 @@ const ReportScreen = () => {
 
             {/* Optional: Description */}
             <VStack space="sm">
-              <SectionLabel>💬 Add details (optional)</SectionLabel>
+              <SectionLabel>{t('report.addDetails')}</SectionLabel>
               <Box
                 bg={COLORS.white}
                 borderColor={COLORS.border}
@@ -607,7 +607,7 @@ const ReportScreen = () => {
               >
                 <Input variant="outline" h={80} borderWidth={0}>
                   <InputField
-                    placeholder="E.g., 3-story building, near the main road..."
+                    placeholder={t('report.descriptionPlaceholder')}
                     placeholderTextColor={COLORS.textMuted}
                     value={description}
                     onChangeText={setDescription}
@@ -659,14 +659,14 @@ const ReportScreen = () => {
             <HStack space="sm" alignItems="center">
               <Icons.Upload size={20} color={COLORS.white} />
               <Text fontSize={17} color={COLORS.white} fontWeight="700">
-                Submit Report
+                {t('report.submitReport')}
               </Text>
             </HStack>
           )}
         </Pressable>
         {unsyncedCount > 0 && (
           <Text fontSize={11} color={COLORS.textSecondary} textAlign="center" mt={SPACING.xs}>
-            {unsyncedCount} report(s) waiting to sync
+            {t('report.reportsWaitingSync', { count: unsyncedCount })}
           </Text>
         )}
       </Box>

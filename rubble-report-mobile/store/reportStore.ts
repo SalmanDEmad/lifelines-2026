@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Report, getAllReports, saveReport as dbSaveReport, getUnsyncedReports as dbGetUnsyncedReports, markSynced as dbMarkSynced, deleteReport as dbDeleteReport, clearNonDemoReports as dbClearNonDemoReports } from '../utils/database';
+import { Report, getAllReports, saveReport as dbSaveReport, getUnsyncedReports as dbGetUnsyncedReports, markSynced as dbMarkSynced, deleteReport as dbDeleteReport, clearNonDemoReports as dbClearNonDemoReports, updateReportId as dbUpdateReportId } from '../utils/database';
 
 interface ReportState {
   localReports: Report[];
@@ -11,6 +11,7 @@ interface ReportState {
   loadReportsFromDB: () => Promise<void>;
   getUnsyncedReports: () => Promise<Report[]>;
   markSynced: (reportId: string) => Promise<void>;
+  updateReportId: (oldId: string, newId: string) => Promise<void>;
   setCurrentReport: (report: Report | null) => void;
   clearCurrentReport: () => void;
   deleteLocalReport: (reportId: string) => Promise<void>;
@@ -71,6 +72,19 @@ export const useReportStore = create<ReportState>((set, get) => ({
       set({ localReports: updatedReports, unsyncedCount });
     } catch (error) {
       console.error('Error marking report as synced:', error);
+    }
+  },
+
+  updateReportId: async (oldId: string, newId: string) => {
+    try {
+      await dbUpdateReportId(oldId, newId);
+      const updatedReports = get().localReports.map((r) =>
+        r.id === oldId ? { ...r, id: newId } : r
+      );
+      set({ localReports: updatedReports });
+      console.log(`[STORE] Report ID updated: ${oldId} -> ${newId}`);
+    } catch (error) {
+      console.error('Error updating report ID:', error);
     }
   },
 
