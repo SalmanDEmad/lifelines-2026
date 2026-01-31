@@ -202,7 +202,7 @@ function AppContent() {
         <TabButton 
           screen="Map" 
           icon={Map} 
-          label="Map" 
+          label={t('common.map')} 
         />
         <TabButton 
           screen="Settings" 

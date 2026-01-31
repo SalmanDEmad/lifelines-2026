@@ -10,6 +10,7 @@ interface ReportState {
   addLocalReport: (report: Omit<Report, 'id' | 'synced'>) => Promise<void>;
   loadReportsFromDB: () => Promise<void>;
   getUnsyncedReports: () => Promise<Report[]>;
+  getLocalReport: (reportId: string) => Promise<Report | undefined>;
   markSynced: (reportId: string) => Promise<void>;
   updateReportId: (oldId: string, newId: string) => Promise<void>;
   setCurrentReport: (report: Report | null) => void;
@@ -59,6 +60,17 @@ export const useReportStore = create<ReportState>((set, get) => ({
     } catch (error) {
       console.error('Error getting unsynced reports:', error);
       return [];
+    }
+  },
+
+  getLocalReport: async (reportId: string) => {
+    try {
+      // Check if report exists in current state
+      const report = get().localReports.find(r => r.id === reportId);
+      return report;
+    } catch (error) {
+      console.error('Error getting local report:', error);
+      return undefined;
     }
   },
 

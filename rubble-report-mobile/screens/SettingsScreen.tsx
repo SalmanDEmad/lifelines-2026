@@ -155,10 +155,10 @@ const SettingsScreen = () => {
       await AsyncStorage.removeItem('user_zone');
       await AsyncStorage.removeItem('selected_region');
       setZone(null);
-      Alert.alert('Reset Complete', 'Please restart the app to go through onboarding again.');
+      Alert.alert(t('setup.resetComplete'), t('setup.restartAppOnboarding'));
     } catch (error) {
       console.error('Error resetting onboarding:', error);
-      Alert.alert(t('auth.error'), 'Failed to reset setup');
+      Alert.alert(t('auth.error'), t('setup.failedResetSetup'));
     }
   };
 
@@ -170,7 +170,7 @@ const SettingsScreen = () => {
       const onboardingComplete = await AsyncStorage.getItem('onboarding_complete');
       
       Alert.alert(
-        'Debug: Storage Values',
+        t('setup.debugStorageValues'),
         `selected_region: ${region || '(not set)'}\n` +
         `user_zone: ${userZone || '(not set)'}\n` +
         `onboarding_complete: ${onboardingComplete || '(not set)'}`
@@ -186,21 +186,21 @@ const SettingsScreen = () => {
     const demoCount = localReports.filter((r) => r.is_demo === 1).length;
 
     Alert.alert(
-      'Clear All Data',
-      `This will delete ${nonDemoCount} reports you've created.\n\nDemo reports (${demoCount}) will be preserved.\n\nThis action cannot be undone.`,
+      t('setup.clearAllData'),
+      `${t('setup.clearAllDataMessage')} ${nonDemoCount} ${t('setup.reports')}.\n\n${t('setup.demoReports')} (${demoCount}) ${t('setup.preserved')}.\n\n${t('setup.cannotUndo')}`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Clear All Data',
+          text: t('setup.clearAllData'),
           style: 'destructive',
           onPress: async () => {
             setLoading(true);
             try {
               const deletedCount = await useReportStore.getState().clearNonDemoReports();
-              Alert.alert('Data Cleared', `Deleted ${deletedCount} reports. Demo data preserved.`);
+              Alert.alert(t('setup.dataCleared'), t('setup.dataClearedWith', { count: deletedCount }));
             } catch (error) {
               console.error('Error clearing data:', error);
-              Alert.alert('Error', 'Failed to clear data. Please try again.');
+              Alert.alert(t('common.error'), t('setup.failedClearDataTryAgain'));
             } finally {
               setLoading(false);
             }
@@ -356,7 +356,7 @@ const SettingsScreen = () => {
         </Text>
 
         {/* Zone & Language Section */}
-        <SectionTitle title="Configuration" />
+        <SectionTitle title={t('setup.configuration')} />
         <View style={styles.sectionContainer}>
           <SettingCard
             icon={MapPin}
@@ -401,10 +401,10 @@ const SettingsScreen = () => {
             </View>
             <View style={[styles.cardContent, isRTL && { marginRight: 12, marginLeft: 0 }]}>
               <Text style={[styles.cardLabel, isRTL && { textAlign: 'right' }]}>
-                Screen Reader (VoiceOver)
+                {t('setup.screenReader')}
               </Text>
               <Text style={[styles.cardValue, isRTL && { textAlign: 'right' }]}>
-                {screenReaderEnabled ? 'Enabled' : 'Not Detected'}
+                {screenReaderEnabled ? t('common.enabled') : t('common.notDetected')}
               </Text>
             </View>
           </View>

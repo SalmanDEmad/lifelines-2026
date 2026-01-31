@@ -296,13 +296,20 @@ const MapScreen = () => {
     
     // Prevent voting on demo reports that haven't been synced to Supabase
     if (selectedReport.synced === 0) {
-      Alert.alert('Cannot Vote', 'This report needs to be synced to the server before voting is enabled. Please check your connection and sync reports.');
+      Alert.alert(t('map.cannotVote'), t('map.unsyncedReportVote'));
       return;
     }
     
     try {
       setVotingLoading(true);
-      console.log('Submitting vote:', voteType, 'for report:', selectedReport.id);
+      
+      // Refresh selectedReport from database in case it was synced and ID was updated
+      const { getLocalReport } = useReportStore.getState();
+      const freshReport = selectedReport.id ? await getLocalReport(selectedReport.id) : undefined;
+      const reportId = freshReport?.id || selectedReport.id;
+      
+      console.log('Submitting vote:', voteType, 'for report:', reportId);
+      console.log('Using report ID:', reportId, '(was:', selectedReport.id, ')');
       
       // IMPORTANT: Voting should only work when the user is geographically close to the report location.
       // This is a crucial feature to ensure that only eyewitnesses can validate reports.
@@ -327,7 +334,7 @@ const MapScreen = () => {
         .from('report_votes')
         .upsert(
           {
-            report_id: selectedReport.id!,
+            report_id: reportId,
             user_id: userId,
             vote_type: voteType,
           },
@@ -336,7 +343,7 @@ const MapScreen = () => {
 
       if (error) {
         console.error('Vote submission error:', error);
-        Alert.alert('Error', 'Failed to submit vote. Please try again.');
+        Alert.alert(t('map.voteFailedTitle'), t('map.voteFailedMessage'));
         setVotingLoading(false);
         return;
       }
@@ -345,15 +352,15 @@ const MapScreen = () => {
       setUserVote(voteType);
       
       // Reload vote stats
-      if (selectedReport.id) {
-        await loadVoteStats(selectedReport.id);
+      if (reportId) {
+        await loadVoteStats(reportId);
       }
       
-      Alert.alert('Vote Submitted', 'Your vote on report accuracy has been recorded.');
+      Alert.alert(t('map.voteSubmittedTitle'), t('map.voteSubmittedMessage'));
       setVotingLoading(false);
     } catch (error) {
       console.error('Error submitting vote:', error);
-      Alert.alert('Error', 'Failed to submit vote. Please try again.');
+      Alert.alert(t('map.voteFailedTitle'), t('map.voteFailedMessage'));
       setVotingLoading(false);
     }
   };
@@ -389,7 +396,7 @@ const MapScreen = () => {
     // Mark demo data as loaded and persist
     setDemoDataLoaded(true);
     await AsyncStorage.setItem('demo_data_loaded', 'true');
-    Alert.alert('Demo Data Created', `Added ${created} sample hazard reports for ${regionConfig.name}`);
+    Alert.alert(t('map.demoDataCreated'), t('map.demoDataMessage', { count: created, region: regionConfig.name }));
   };
 
   const getUserLocation = async () => {
@@ -422,10 +429,10 @@ const MapScreen = () => {
       console.log('[UI] Manual sync button pressed');
       await manualSync();
       await loadReportsFromDB(); // Refresh UI after sync
-      Alert.alert('Sync', 'Reports sync attempt completed. Check console for details.');
+      Alert.alert(t('map.syncTitle'), t('map.syncMessage'));
     } catch (error) {
       console.error('Manual sync error:', error);
-      Alert.alert('Sync Error', 'Failed to sync reports. Check your internet connection.');
+      Alert.alert(t('map.syncErrorTitle'), t('map.syncErrorMessage'));
     } finally {
       setSyncing(false);
     }
@@ -643,7 +650,7 @@ const MapScreen = () => {
                           {materials.length > 0 && (
                             <VStack space="xs">
                               <Text fontSize={12} color={COLORS.textSecondary} fontWeight="600">
-                                Materials:
+                                {t('map.materials')}
                               </Text>
                               <HStack space="xs" flexWrap="wrap">
                                 {materials.map((material: string) => (
@@ -666,7 +673,7 @@ const MapScreen = () => {
                           {hazards.length > 0 && (
                             <VStack space="xs">
                               <Text fontSize={12} color={COLORS.textSecondary} fontWeight="600">
-                                Hazards:
+                                {t('map.hazards')}
                               </Text>
                               <HStack space="xs" flexWrap="wrap">
                                 {hazards.map((hazard: string) => {
@@ -929,7 +936,7 @@ const MapScreen = () => {
                 <HStack space="sm" alignItems="center">
                   <Navigation2 size={18} color={COLORS.white} />
                   <Text fontSize={14} color={COLORS.white} fontWeight="600">
-                    Go to Location
+                    {t('map.goToLocation')}
                   </Text>
                 </HStack>
               </Pressable>
@@ -974,7 +981,7 @@ const MapScreen = () => {
             }}
           >
             <Text style={{ color: COLORS.white, fontWeight: '600', fontSize: 14 }}>
-              Load Demo Reports
+              {t('map.loadDemoReports')}
             </Text>
           </Pressable>
         )}

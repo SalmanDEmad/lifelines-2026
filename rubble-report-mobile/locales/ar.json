@@ -40,7 +40,23 @@
     "textSize": "حجم النص",
     "small": "صغير",
     "medium": "متوسط",
-    "large": "كبير"
+    "large": "كبير",
+    "configuration": "الإعدادات",
+    "resetComplete": "اكتمل إعادة التعيين",
+    "restartAppOnboarding": "يرجى إعادة تشغيل التطبيق للمتابعة عبر الإعداد مرة أخرى.",
+    "clearAllData": "مسح جميع البيانات",
+    "dataCleared": "تم مسح البيانات",
+    "failedClearData": "فشل مسح البيانات. يرجى المحاولة مرة أخرى.",
+    "debugStorageValues": "تصحيح: قيم التخزين",
+    "screenReader": "قارئ الشاشة (VoiceOver)",
+    "clearAllDataMessage": "سيؤدي هذا إلى حذف",
+    "reports": "التقارير التي أنشأتها.",
+    "demoReports": "التقارير التوضيحية",
+    "preserved": "سيتم الحفاظ عليها.",
+    "cannotUndo": "لا يمكن التراجع عن هذا الإجراء.",
+    "dataClearedWith": "تم حذف {count} تقارير. تم الحفاظ على البيانات التوضيحية.",
+    "failedClearDataTryAgain": "فشل مسح البيانات. يرجى المحاولة مرة أخرى.",
+    "failedResetSetup": "فشل إعادة تعيين الإعداد"
   },
   "report": {
     "title": "الإبلاغ عن كارثة",
@@ -100,7 +116,8 @@
     "bodies": "رفات بشرية",
     "chemicals": "مواد كيميائية",
     "electrical": "خطر كهربائي",
-    "blocked_road": "طريق مسدود"
+    "blocked_road": "طريق مسدود",
+    "gas_leak": "تسرب غاز"
   },
   "map": {
     "title": "تقاريرك",
@@ -123,7 +140,24 @@
     "deleteError": "فشل حذف التقرير",
     "mapUnavailable": "الخريطة غير متوفرة",
     "mapUnavailableText": "الخريطة التفاعلية تتطلب إصدار تطوير. استخدم عرض القائمة لرؤية تقاريرك.",
-    "reports": "التقارير"
+    "reports": "التقارير",
+    "materials": "المواد:",
+    "hazards": "المخاطر:",
+    "cannotVote": "لا يمكن التصويت",
+    "unsyncedReportVote": "يجب مزامنة هذا التقرير مع الخادم قبل تفعيل التصويت. يرجى التحقق من اتصالك ومزامنة التقارير.",
+    "demoDataCreated": "تم إنشاء بيانات توضيحية",
+    "demoDataMessage": "تمت إضافة {count} تقارير خطر عينة ل {region}",
+    "voteFailedTitle": "خطأ",
+    "voteFailedMessage": "فشل تقديم التصويت. يرجى المحاولة مرة أخرى.",
+    "voteSubmittedTitle": "تم تقديم التصويت",
+    "voteSubmittedMessage": "تم تسجيل تصويتك على دقة التقرير.",
+    "syncTitle": "مزامنة",
+    "syncMessage": "اكتمل محاولة مزامنة التقارير. تحقق من وحدة التحكم للتفاصيل.",
+    "syncErrorTitle": "خطأ المزامنة",
+    "syncErrorMessage": "فشل مزامنة التقارير. تحقق من اتصالك بالإنترنت.",
+    "loadDemoReports": "تحميل التقارير التوضيحية",
+    "goToLocation": "الذهاب إلى الموقع",
+    "close": "إغلاق"
   },
   "categories": {
     "rubble": "أنقاض",
@@ -138,7 +172,8 @@
     "setup": "الإعداد",
     "settings": "الإعدادات",
     "report": "إنشاء",
-    "map": "السجل",
+    "map": "الخريطة",
+    "history": "السجل",
     "gotIt": "حسنا!",
     "refresh": "تحديث",
     "loading": "جاري التحميل...",
@@ -236,5 +271,17 @@
     "withPhotosDesc": "تقارير كاملة مع الصور (~500 كيلوبايت لكل تقرير)",
     "withoutPhotos": "مزامنة بدون صور",
     "withoutPhotosDesc": "نص وموقع فقط (~1 كيلوبايت لكل تقرير)"
+  },
+  "common": {
+    "cancel": "إلغاء",
+    "clear": "حذف",
+    "error": "خطأ",
+    "unknownError": "حدث خطأ غير معروف",
+    "enabled": "مفعل",
+    "notDetected": "لم يتم الكشف",
+    "map": "الخريطة",
+    "history": "السجل",
+    "report": "التقرير",
+    "settings": "الإعدادات"
   }
 }

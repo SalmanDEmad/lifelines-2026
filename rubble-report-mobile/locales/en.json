@@ -40,7 +40,23 @@
     "textSize": "Text Size",
     "small": "Small",
     "medium": "Medium",
-    "large": "Large"
+    "large": "Large",
+    "configuration": "Configuration",
+    "resetComplete": "Reset Complete",
+    "restartAppOnboarding": "Please restart the app to go through onboarding again.",
+    "clearAllData": "Clear All Data",
+    "dataCleared": "Data Cleared",
+    "failedClearData": "Failed to clear data. Please try again.",
+    "debugStorageValues": "Debug: Storage Values",
+    "screenReader": "Screen Reader (VoiceOver)",
+    "clearAllDataMessage": "This will delete",
+    "reports": "reports you've created.",
+    "demoReports": "Demo reports",
+    "preserved": "will be preserved.",
+    "cannotUndo": "This action cannot be undone.",
+    "dataClearedWith": "Deleted {count} reports. Demo data preserved.",
+    "failedClearDataTryAgain": "Failed to clear data. Please try again.",
+    "failedResetSetup": "Failed to reset setup"
   },
   "report": {
     "title": "Report Disaster",
@@ -100,7 +116,8 @@
     "bodies": "Human Remains",
     "chemicals": "Chemicals",
     "electrical": "Electrical Hazard",
-    "blocked_road": "Blocked Road"
+    "blocked_road": "Blocked Road",
+    "gas_leak": "Gas Leak"
   },
   "map": {
     "title": "Your Reports",
@@ -123,7 +140,24 @@
     "deleteError": "Failed to delete report",
     "mapUnavailable": "Map Not Available",
     "mapUnavailableText": "The interactive map requires a development build. Use the list view to see your reports.",
-    "reports": "Reports"
+    "reports": "Reports",
+    "materials": "Materials:",
+    "hazards": "Hazards:",
+    "cannotVote": "Cannot Vote",
+    "unsyncedReportVote": "This report needs to be synced to the server before voting is enabled. Please check your connection and sync reports.",
+    "demoDataCreated": "Demo Data Created",
+    "demoDataMessage": "Added {count} sample hazard reports for {region}",
+    "voteFailedTitle": "Error",
+    "voteFailedMessage": "Failed to submit vote. Please try again.",
+    "voteSubmittedTitle": "Vote Submitted",
+    "voteSubmittedMessage": "Your vote on report accuracy has been recorded.",
+    "syncTitle": "Sync",
+    "syncMessage": "Reports sync attempt completed. Check console for details.",
+    "syncErrorTitle": "Sync Error",
+    "syncErrorMessage": "Failed to sync reports. Check your internet connection.",
+    "loadDemoReports": "Load Demo Reports",
+    "goToLocation": "Go to Location",
+    "close": "Close"
   },
   "categories": {
     "rubble": "Rubble",
@@ -138,7 +172,8 @@
     "setup": "Setup",
     "settings": "Settings",
     "report": "Create",
-    "map": "History",
+    "map": "Map",
+    "history": "History",
     "gotIt": "Got it!",
     "refresh": "Refresh",
     "loading": "Loading...",
@@ -236,5 +271,17 @@
     "withPhotosDesc": "Full reports with images (~500KB each)",
     "withoutPhotos": "Sync without photos",
     "withoutPhotosDesc": "Text and location only (~1KB each)"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "error": "Error",
+    "unknownError": "Unknown error occurred",
+    "enabled": "Enabled",
+    "notDetected": "Not Detected",
+    "map": "Map",
+    "history": "History",
+    "report": "Report",
+    "settings": "Settings"
   }
 }

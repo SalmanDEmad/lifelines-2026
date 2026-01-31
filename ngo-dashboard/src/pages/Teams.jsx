@@ -160,14 +160,14 @@ export default function Teams() {
               onClick={() => setShowTeamModal(true)}
             >
               <Plus size={16} />
-              Create Team
+              {t('teams.createTeam')}
             </button>
             <button 
               className="btn btn-secondary" 
               onClick={() => setShowMemberModal(true)}
             >
               <Plus size={16} />
-              Add Member
+              {t('teams.addMember')}
             </button>
           </div>
         </div>
