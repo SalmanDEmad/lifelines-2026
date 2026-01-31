@@ -12,7 +12,7 @@ CREATE TABLE reports (
   description TEXT,
   image_url TEXT,
   timestamp TIMESTAMPTZ NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'resolved')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'resolved')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

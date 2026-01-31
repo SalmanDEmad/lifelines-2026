@@ -29,7 +29,9 @@ export default function Reports() {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
+      console.log('[INFO] Changing status for report:', { id, newStatus });
       await reportsApi.updateStatus(id, newStatus);
+      console.log('[SUCCESS] Status changed, updating UI');
       setReports(reports.map(r => 
         r.id === id ? { ...r, status: newStatus } : r
       ));
@@ -38,7 +40,7 @@ export default function Reports() {
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status');
+      alert('Failed to update status: ' + (error.message || error.toString()));
     }
   };
 
@@ -184,262 +186,220 @@ export default function Reports() {
       {/* Report Detail Modal */}
       {selectedReport && (
         <div className="modal-overlay" onClick={() => setSelectedReport(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Report Details</h3>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+            <div className="modal-header" style={{ borderBottom: 'none', padding: '16px 20px 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className={`category-badge ${selectedReport.category}`} style={{ margin: 0 }}>
+                  {selectedReport.category?.replace('_', ' ')}
+                </span>
+                <span style={{ color: '#666', fontSize: '13px' }}>
+                  {selectedReport.zone || 'Unknown Zone'}
+                </span>
+              </div>
               <button 
                 className="btn btn-sm btn-secondary"
                 onClick={() => setSelectedReport(null)}
+                style={{ padding: '4px 8px' }}
               >
                 ✕
               </button>
             </div>
-            <div className="modal-body">
-              {selectedReport.image_url && (
-                <img 
-                  src={selectedReport.image_url} 
-                  alt="Report" 
-                  className="report-image"
-                />
-              )}
-              
-              <div className="form-group">
-                <label>Category</label>
-                <p>
-                  <span className={`category-badge ${selectedReport.category}`}>
-                    {selectedReport.category?.replace('_', ' ')}
-                  </span>
-                </p>
-              </div>
 
-              <div className="form-group">
-                <label>Location</label>
-                <p>
-                  {selectedReport.latitude?.toFixed(6)}, {selectedReport.longitude?.toFixed(6)}
-                  <br />
-                  <small style={{ color: '#666' }}>Zone: {selectedReport.zone || 'Unknown'}</small>
-                </p>
-              </div>
+            <div className="modal-body" style={{ padding: '12px 20px 20px', display: 'flex', gap: '20px' }}>
+              {/* Left: Image */}
+              <div style={{ flex: '0 0 340px' }}>
+                {selectedReport.image_url ? (
+                  <img 
+                    src={selectedReport.image_url} 
+                    alt="Report" 
+                    style={{ 
+                      width: '100%', 
+                      height: '280px', 
+                      objectFit: 'cover', 
+                      borderRadius: '8px',
+                      background: '#f0f0f0'
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div style={{ 
+                  display: selectedReport.image_url ? 'none' : 'flex',
+                  width: '100%', 
+                  height: '280px', 
+                  background: '#f5f5f5', 
+                  borderRadius: '8px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#999',
+                  fontSize: '13px'
+                }}>
+                  No image available
+                </div>
 
-              {/* Materials Section */}
-              {selectedReport.subcategory && selectedReport.subcategory.includes('materials:') && (
-                <div className="form-group">
-                  <label>Materials Detected</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                    {selectedReport.subcategory.split('|')[0]?.replace('materials:', '').split(',').map((material, idx) => (
-                      <span 
-                        key={idx}
-                        style={{ 
-                          backgroundColor: '#3B82F6', 
-                          color: 'white', 
-                          padding: '4px 10px', 
-                          borderRadius: '4px', 
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          textTransform: 'capitalize'
-                        }}
-                      >
-                        {material.trim()}
-                      </span>
-                    ))}
+                {/* Location below image */}
+                <div style={{ marginTop: '12px', padding: '10px', background: '#f8f9fa', borderRadius: '6px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#666' }}>Coordinates</span>
+                    <span style={{ fontFamily: 'monospace' }}>
+                      {selectedReport.latitude?.toFixed(5)}, {selectedReport.longitude?.toFixed(5)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#666' }}>Reported</span>
+                    <span>{new Date(selectedReport.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Hazards Section */}
-              {selectedReport.subcategory && selectedReport.subcategory.includes('hazards:') && (
-                <div className="form-group">
-                  <label>⚠️ Hazards Identified</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                    {selectedReport.subcategory.split('|').find(p => p.startsWith('hazards:'))?.replace('hazards:', '').split(',').map((hazard, idx) => {
-                      const hazardConfig = {
-                        uxo: { color: '#DC2626', label: 'UXOs' },
-                        bodies: { color: '#7C3AED', label: 'Human Remains' },
-                        chemicals: { color: '#F59E0B', label: 'Chemicals' },
-                        electrical: { color: '#EF4444', label: 'Electrical' },
-                        blocked_road: { color: '#92400E', label: 'Blocked Road' }
-                      };
-                      const config = hazardConfig[hazard.trim()] || { color: '#6B7280', label: hazard.trim() };
-                      return (
+              {/* Right: Details */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Status Row */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <StatusButton 
+                      status="pending" 
+                      currentStatus={selectedReport.status}
+                      onClick={(s) => handleStatusChange(selectedReport.id, s)}
+                    />
+                    <StatusButton 
+                      status="in_progress" 
+                      currentStatus={selectedReport.status}
+                      onClick={(s) => handleStatusChange(selectedReport.id, s)}
+                    />
+                    <StatusButton 
+                      status="resolved" 
+                      currentStatus={selectedReport.status}
+                      onClick={(s) => handleStatusChange(selectedReport.id, s)}
+                    />
+                  </div>
+                </div>
+
+                {/* Materials & Hazards in compact rows */}
+                {selectedReport.subcategory && selectedReport.subcategory.includes('materials:') && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Materials</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {selectedReport.subcategory.split('|')[0]?.replace('materials:', '').split(',').map((material, idx) => (
                         <span 
                           key={idx}
                           style={{ 
-                            backgroundColor: config.color, 
-                            color: 'white', 
-                            padding: '4px 10px', 
+                            background: '#e0edff', 
+                            color: '#2563eb', 
+                            padding: '3px 8px', 
                             borderRadius: '4px', 
-                            fontSize: '12px',
-                            fontWeight: '600'
+                            fontSize: '11px',
+                            fontWeight: '500',
+                            textTransform: 'capitalize'
                           }}
                         >
-                          {config.label}
+                          {material.trim()}
                         </span>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {selectedReport.description && (
-                <div className="form-group">
-                  <label>📝 User Comments</label>
-                  <p style={{ background: '#f9fafb', padding: '10px', borderRadius: '6px', marginTop: '6px' }}>
-                    {selectedReport.description}
-                  </p>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Reported</label>
-                <p>{new Date(selectedReport.created_at).toLocaleString()}</p>
-              </div>
-
-              <div className="form-group">
-                <label>Status</label>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <StatusButton 
-                    status="pending" 
-                    currentStatus={selectedReport.status}
-                    onClick={(s) => handleStatusChange(selectedReport.id, s)}
-                  />
-                  <StatusButton 
-                    status="in_progress" 
-                    currentStatus={selectedReport.status}
-                    onClick={(s) => handleStatusChange(selectedReport.id, s)}
-                  />
-                  <StatusButton 
-                    status="resolved" 
-                    currentStatus={selectedReport.status}
-                    onClick={(s) => handleStatusChange(selectedReport.id, s)}
-                  />
-                </div>
-              </div>
-
-              {/* Community Consensus / Voting Section */}
-              <div className="form-group">
-                <label>
-                  <img 
-                    src={getTwemojiUrl('🗳️')} 
-                    alt="vote" 
-                    style={{ width: '1.2em', height: '1.2em', marginRight: '6px', verticalAlign: 'middle' }}
-                  />
-                  Community Consensus
-                </label>
-                {votesLoading ? (
-                  <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
-                    Loading votes...
+                {selectedReport.subcategory && selectedReport.subcategory.includes('hazards:') && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>⚠️ Hazards</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {selectedReport.subcategory.split('|').find(p => p.startsWith('hazards:'))?.replace('hazards:', '').split(',').map((hazard, idx) => {
+                        const hazardConfig = {
+                          uxo: { bg: '#fee2e2', color: '#dc2626', label: 'UXOs' },
+                          bodies: { bg: '#ede9fe', color: '#7c3aed', label: 'Human Remains' },
+                          chemicals: { bg: '#fef3c7', color: '#d97706', label: 'Chemicals' },
+                          electrical: { bg: '#fee2e2', color: '#dc2626', label: 'Electrical' },
+                          blocked_road: { bg: '#fef3c7', color: '#92400e', label: 'Blocked Road' }
+                        };
+                        const config = hazardConfig[hazard.trim()] || { bg: '#f3f4f6', color: '#6b7280', label: hazard.trim() };
+                        return (
+                          <span 
+                            key={idx}
+                            style={{ 
+                              background: config.bg, 
+                              color: config.color, 
+                              padding: '3px 8px', 
+                              borderRadius: '4px', 
+                              fontSize: '11px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            {config.label}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
-                ) : voteStats ? (
-                  <div style={{ 
-                    background: '#f5f5f5', 
-                    padding: '12px', 
-                    borderRadius: '6px',
-                    marginTop: '8px'
-                  }}>
-                    <div style={{ marginBottom: '12px' }}>
-                      <strong style={{ display: 'block', marginBottom: '6px' }}>
-                        {voteStats.totalVotes} {voteStats.totalVotes === 1 ? 'vote' : 'votes'}
-                      </strong>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '8px'
-                      }}>
-                        <span style={{ minWidth: '70px', fontSize: '12px', color: '#666' }}>
-                          Accuracy:
-                        </span>
-                        <div style={{
-                          flex: 1,
-                          height: '24px',
-                          background: '#e5e5e5',
-                          borderRadius: '4px',
-                          overflow: 'hidden'
-                        }}>
-                          <div style={{
-                            height: '100%',
-                            width: `${Math.max(voteStats.accuracyPercentage, 5)}%`,
-                            background: '#10B981',
-                            transition: 'width 0.3s ease'
-                          }} />
+                )}
+
+                {/* Description */}
+                {selectedReport.description && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes</div>
+                    <p style={{ 
+                      margin: 0, 
+                      padding: '8px 10px', 
+                      background: '#f8f9fa', 
+                      borderRadius: '6px', 
+                      fontSize: '13px',
+                      lineHeight: '1.4',
+                      color: '#374151'
+                    }}>
+                      {selectedReport.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Voting - Compact */}
+                <div style={{ marginTop: '16px', padding: '12px', background: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🗳️ Community Consensus
+                  </div>
+                  {votesLoading ? (
+                    <div style={{ color: '#999', fontSize: '12px' }}>Loading...</div>
+                  ) : voteStats ? (
+                    <div>
+                      {/* Accuracy bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1, height: '6px', background: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${voteStats.accuracyPercentage}%`, background: '#10B981', borderRadius: '3px' }} />
                         </div>
-                        <span style={{ minWidth: '35px', textAlign: 'right', fontWeight: 'bold' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#10B981', minWidth: '40px' }}>
                           {voteStats.accuracyPercentage}%
                         </span>
                       </div>
-                    </div>
-
-                    {/* Vote Breakdown with Twemoji */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr 1fr',
-                      gap: '8px',
-                      fontSize: '12px'
-                    }}>
-                      <div style={{
-                        padding: '8px',
-                        background: '#e0ffe0',
-                        borderRadius: '4px',
-                        textAlign: 'center'
-                      }}>
-                        <img 
-                          src={getTwemojiUrl(VOTE_EMOJIS.accurate)} 
-                          alt="accurate" 
-                          style={{ width: '1.4em', height: '1.4em', marginBottom: '4px', display: 'block', margin: '0 auto 4px' }}
-                        />
-                        <strong>{voteStats.accurateVotes}</strong>
-                        <div style={{ fontSize: '10px', color: '#666' }}>Accurate</div>
-                      </div>
-                      <div style={{
-                        padding: '8px',
-                        background: '#ffe0e0',
-                        borderRadius: '4px',
-                        textAlign: 'center'
-                      }}>
-                        <img 
-                          src={getTwemojiUrl(VOTE_EMOJIS.inaccurate)} 
-                          alt="inaccurate" 
-                          style={{ width: '1.4em', height: '1.4em', marginBottom: '4px', display: 'block', margin: '0 auto 4px' }}
-                        />
-                        <strong>{voteStats.inaccurateVotes}</strong>
-                        <div style={{ fontSize: '10px', color: '#666' }}>Inaccurate</div>
-                      </div>
-                      <div style={{
-                        padding: '8px',
-                        background: '#fff8e0',
-                        borderRadius: '4px',
-                        textAlign: 'center'
-                      }}>
-                        <img 
-                          src={getTwemojiUrl(VOTE_EMOJIS.unclear)} 
-                          alt="unclear" 
-                          style={{ width: '1.4em', height: '1.4em', marginBottom: '4px', display: 'block', margin: '0 auto 4px' }}
-                        />
-                        <strong>{voteStats.unclearVotes}</strong>
-                        <div style={{ fontSize: '10px', color: '#666' }}>Unclear</div>
+                      {/* Vote counts inline */}
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                        <span style={{ color: '#10b981' }}>✓ {voteStats.accurateVotes}</span>
+                        <span style={{ color: '#ef4444' }}>✗ {voteStats.inaccurateVotes}</span>
+                        <span style={{ color: '#f59e0b' }}>? {voteStats.unclearVotes}</span>
+                        <span style={{ color: '#666', marginLeft: 'auto' }}>{voteStats.totalVotes} votes</span>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
-                    No votes yet
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ color: '#999', fontSize: '12px' }}>No votes yet</div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="modal-footer">
+
+            <div className="modal-footer" style={{ borderTop: '1px solid #eee', padding: '12px 20px' }}>
               <button 
                 className="btn btn-danger"
-                onClick={() => {
-                  handleDelete(selectedReport.id);
-                }}
+                onClick={() => handleDelete(selectedReport.id)}
+                style={{ padding: '6px 12px', fontSize: '13px' }}
               >
-                <Trash2 size={16} />
-                Delete Report
+                <Trash2 size={14} style={{ marginRight: '4px' }} />
+                Delete
               </button>
               <button 
                 className="btn btn-secondary"
                 onClick={() => setSelectedReport(null)}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
               >
                 Close
               </button>

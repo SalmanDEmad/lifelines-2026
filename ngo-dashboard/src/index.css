@@ -315,8 +315,8 @@ body {
 .modal {
   background: white;
   border-radius: 12px;
-  width: 500px;
-  max-width: 90%;
+  width: 900px;
+  max-width: 95%;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -452,10 +452,19 @@ body {
 /* Image preview */
 .report-image {
   width: 100%;
-  max-height: 200px;
-  object-fit: cover;
+  max-height: 400px;
+  object-fit: contain;
   border-radius: 8px;
   margin-bottom: 12px;
+  background: #f0f0f0;
+}
+
+.report-image-container {
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
 }
 
 /* Loading state */

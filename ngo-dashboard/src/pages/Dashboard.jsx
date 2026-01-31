@@ -100,8 +100,9 @@ const createCategoryIcon = (category) => {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-    "><img src="${style.emojiUrl}" alt="${style.emoji}" style="width: 18px; height: 18px;" /></div>`,
+      font-size: 20px;
+      line-height: 1;
+    ">${style.emoji}</div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -16]
@@ -204,13 +205,23 @@ export default function Dashboard() {
       const reportsPromise = reportsApi.getAll();
       const statsPromise = reportsApi.getStats();
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 8000)
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
 
       const [data, statsData] = await Promise.all([
         Promise.race([reportsPromise, timeoutPromise]),
         Promise.race([statsPromise, timeoutPromise])
       ]);
+
+      // Log image status for debugging
+      console.log('[REPORTS] Total reports fetched:', data?.length || 0);
+      const reportsWithImages = data?.filter(r => r.image_url) || [];
+      const reportsWithoutImages = data?.filter(r => !r.image_url) || [];
+      console.log('[REPORTS] Reports with images:', reportsWithImages.length);
+      console.log('[REPORTS] Reports without images:', reportsWithoutImages.length);
+      if (reportsWithImages.length > 0) {
+        console.log('[REPORTS] Sample image URL:', reportsWithImages[0]?.image_url?.substring(0, 80));
+      }
 
       setReports(data || []);
       setStats(statsData || { total: 0, pending: 0, in_progress: 0, resolved: 0 });
@@ -423,7 +434,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Image Section */}
-                      {report.image_url && (
+                      {report.image_url ? (
                         <div style={{ marginBottom: '12px' }}>
                           <img 
                             src={report.image_url} 
@@ -434,8 +445,25 @@ export default function Dashboard() {
                               objectFit: 'cover', 
                               borderRadius: '6px',
                               border: '1px solid #d1d5db'
-                            }} 
+                            }}
+                            onError={(e) => {
+                              console.error('[IMAGE] Failed to load image from:', report.image_url);
+                              e.target.style.display = 'none';
+                            }}
                           />
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          marginBottom: '12px',
+                          padding: '12px',
+                          backgroundColor: '#f3f4f6',
+                          borderRadius: '6px',
+                          border: '1px dashed #d1d5db',
+                          textAlign: 'center',
+                          fontSize: '12px',
+                          color: '#9ca3af'
+                        }}>
+                          📸 No image available
                         </div>
                       )}
 

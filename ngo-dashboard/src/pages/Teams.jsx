@@ -9,7 +9,7 @@ export default function Teams() {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [expandedTeams, setExpandedTeams] = useState({});
-  const [teamFormData, setTeamFormData] = useState({ name: '' });
+  const [teamFormData, setTeamFormData] = useState({ name: '', phone: '', description: '' });
   const [memberFormData, setMemberFormData] = useState({ name: '', phone: '', team_id: null });
 
   const fetchTeamsAndMembers = async () => {
@@ -55,10 +55,12 @@ export default function Teams() {
     try {
       const newTeam = await teamsApi.createTeam({
         name: teamFormData.name,
+        phone: teamFormData.phone || '+1 (000) 000-0000',
+        description: teamFormData.description || '',
       });
       setTeams([newTeam, ...teams]);
       setExpandedTeams(prev => ({ ...prev, [newTeam.id]: true }));
-      setTeamFormData({ name: '' });
+      setTeamFormData({ name: '', phone: '', description: '' });
       setShowTeamModal(false);
     } catch (error) {
       console.error('Error creating team:', error);
@@ -93,11 +95,13 @@ export default function Teams() {
     if (!confirm('Are you sure you want to remove this member?')) return;
     
     try {
+      console.log('[INFO] Attempting to delete member:', id);
       await teamsApi.deleteMember(id);
+      console.log('[SUCCESS] Member deleted, updating UI');
       setMembers(members.filter(m => m.id !== id));
     } catch (error) {
       console.error('Error deleting member:', error);
-      alert('Failed to delete member');
+      alert('Failed to delete member: ' + error.message);
     }
   };
 
@@ -105,12 +109,14 @@ export default function Teams() {
     if (!confirm('Are you sure you want to delete this team?')) return;
     
     try {
+      console.log('[INFO] Attempting to delete team:', id);
       await teamsApi.deleteTeam(id);
+      console.log('[SUCCESS] Team deleted, updating UI');
       setTeams(teams.filter(t => t.id !== id));
       setMembers(members.map(m => m.team_id === id ? { ...m, team_id: null } : m));
     } catch (error) {
       console.error('Error deleting team:', error);
-      alert('Failed to delete team');
+      alert('Failed to delete team: ' + error.message);
     }
   };
 
@@ -162,14 +168,14 @@ export default function Teams() {
           </div>
         </div>
       ) : (
-        <div style={{ background: 'white', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: 20 }}>
           {/* Teams with members */}
           {teams.map((team) => {
             const teamMembers = getTeamMembers(team.id);
             const isExpanded = expandedTeams[team.id];
             
             return (
-              <div key={team.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <div key={team.id} style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                 <div 
                   style={{
                     display: 'flex',
@@ -178,6 +184,7 @@ export default function Teams() {
                     padding: '16px',
                     cursor: 'pointer',
                     backgroundColor: isExpanded ? '#f3f4f6' : 'white',
+                    borderBottom: '1px solid #e5e7eb'
                   }}
                   onClick={() => toggleTeam(team.id)}
                 >
@@ -257,9 +264,9 @@ export default function Teams() {
             );
           })}
 
-          {/* Unassigned members */}
+          {/* Unassigned members - as a card */}
           {members.some(m => !m.team_id) && (
-            <div style={{ borderTop: '2px solid #e5e7eb' }}>
+            <div style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
               <div 
                 style={{
                   display: 'flex',
@@ -268,6 +275,7 @@ export default function Teams() {
                   padding: '16px',
                   cursor: 'pointer',
                   backgroundColor: expandedTeams['unassigned'] ? '#f3f4f6' : 'white',
+                  borderBottom: '1px solid #e5e7eb'
                 }}
                 onClick={() => setExpandedTeams(prev => ({ ...prev, unassigned: !prev.unassigned }))}
               >
@@ -345,9 +353,27 @@ export default function Teams() {
                   <input
                     type="text"
                     value={teamFormData.name}
-                    onChange={(e) => setTeamFormData({ name: e.target.value })}
+                    onChange={(e) => setTeamFormData({ ...teamFormData, name: e.target.value })}
                     placeholder="e.g., North Zone Team"
                     required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Team Contact Phone</label>
+                  <input
+                    type="tel"
+                    value={teamFormData.phone}
+                    onChange={(e) => setTeamFormData({ ...teamFormData, phone: e.target.value })}
+                    placeholder="e.g., +1 (123) 456-7890"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Team Description</label>
+                  <input
+                    type="text"
+                    value={teamFormData.description}
+                    onChange={(e) => setTeamFormData({ ...teamFormData, description: e.target.value })}
+                    placeholder="e.g., Rescue and recovery team"
                   />
                 </div>
               </div>
@@ -408,7 +434,7 @@ export default function Teams() {
                   <label>Assign to Team</label>
                   <select
                     value={memberFormData.team_id || ''}
-                    onChange={(e) => setMemberFormData({ ...memberFormData, team_id: e.target.value ? parseInt(e.target.value) : null })}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, team_id: e.target.value || null })}
                   >
                     <option value="">Unassigned</option>
                     {teams.map(team => (

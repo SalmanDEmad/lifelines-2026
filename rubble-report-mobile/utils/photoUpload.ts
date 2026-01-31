@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
 import { decode } from 'base64-arraybuffer';
 
@@ -15,28 +15,35 @@ export async function uploadPhotoToSupabase(
   reportId: string
 ): Promise<string | null> {
   try {
-    console.log(`[PHOTO] Uploading photo for report ${reportId}...`);
+    console.log(`[PHOTO] Starting upload for report ${reportId} from URI:`, localUri);
     
     // Check if file exists
     const fileInfo = await FileSystem.getInfoAsync(localUri);
+    console.log(`[PHOTO] File info:`, { exists: fileInfo.exists });
+    
     if (!fileInfo.exists) {
       console.error('[PHOTO] File does not exist:', localUri);
       return null;
     }
 
     // Read file as base64
+    console.log('[PHOTO] Reading file as base64...');
     const base64 = await FileSystem.readAsStringAsync(localUri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64',
     });
+    console.log('[PHOTO] Base64 read, length:', base64.length);
 
     // Generate unique filename
     const timestamp = Date.now();
     const fileName = `${reportId}/${timestamp}.jpg`;
+    console.log('[PHOTO] Generated filename:', fileName);
 
     // Convert base64 to ArrayBuffer for Supabase
     const arrayBuffer = decode(base64);
+    console.log('[PHOTO] Converted to ArrayBuffer, size:', arrayBuffer.byteLength, 'bytes');
 
     // Upload to Supabase Storage
+    console.log('[PHOTO] Uploading to Supabase storage bucket:', PHOTO_BUCKET);
     const { data, error } = await supabase.storage
       .from(PHOTO_BUCKET)
       .upload(fileName, arrayBuffer, {
@@ -47,18 +54,22 @@ export async function uploadPhotoToSupabase(
 
     if (error) {
       console.error('[PHOTO] Upload error:', error);
+      console.error('[PHOTO] Error details:', JSON.stringify(error, null, 2));
       return null;
     }
+
+    console.log('[PHOTO] Upload successful, data:', data);
 
     // Get public URL
     const { data: urlData } = supabase.storage
       .from(PHOTO_BUCKET)
       .getPublicUrl(fileName);
 
-    console.log('[PHOTO] ✓ Upload successful:', urlData.publicUrl);
+    console.log('[PHOTO] ✓ Upload successful, public URL:', urlData.publicUrl);
     return urlData.publicUrl;
   } catch (error) {
-    console.error('[PHOTO] Upload failed:', error);
+    console.error('[PHOTO] Upload failed with exception:', error);
+    console.error('[PHOTO] Error message:', error instanceof Error ? error.message : String(error));
     return null;
   }
 }

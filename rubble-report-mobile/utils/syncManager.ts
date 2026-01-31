@@ -170,13 +170,16 @@ const syncSingleReport = async (report: any): Promise<boolean> => {
       // Upload photo if present
       let imageUrl: string | null = null;
       if (report.imageUri) {
-        console.log(`[PHOTO] Uploading photo for report ${report.id}...`);
+        console.log(`[PHOTO] Report has imageUri, attempting upload...`);
+        console.log(`[PHOTO] imageUri value:`, report.imageUri);
         imageUrl = await uploadPhotoToSupabase(report.imageUri, report.id);
         if (imageUrl) {
-          console.log(`[PHOTO] ✓ Photo uploaded: ${imageUrl}`);
+          console.log(`[PHOTO] ✓ Photo uploaded successfully: ${imageUrl}`);
         } else {
-          console.log(`[PHOTO] ⚠ Photo upload failed, continuing without photo`);
+          console.log(`[PHOTO] ⚠ Photo upload returned null, continuing without photo`);
         }
+      } else {
+        console.log(`[PHOTO] ⚠ Report has no imageUri - this should not happen!`);
       }
 
       // Prepare report data - allow submission even without authentication
@@ -197,7 +200,10 @@ const syncSingleReport = async (report: any): Promise<boolean> => {
 
       // Add image URL if photo was uploaded
       if (imageUrl) {
+        console.log(`[SYNC] Adding image_url to sync data:`, imageUrl);
         syncData.image_url = imageUrl;
+      } else {
+        console.log(`[SYNC] ⚠ No image URL to add - image upload may have failed`);
       }
 
       console.log(`[SYNC] Sending to Supabase:`, JSON.stringify(syncData, null, 2));

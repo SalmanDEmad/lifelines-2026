@@ -65,20 +65,37 @@ export const reportsApi = {
         throw error;
       }
       console.log('[SUCCESS] Fetched', data?.length || 0, 'reports');
+      
+      // Log first report to check for image_url
+      if (data && data.length > 0) {
+        const firstReport = data[0];
+        console.log('[DEBUG] Sample report:', {
+          id: firstReport.id,
+          image_url: firstReport.image_url,
+          hasImageUrl: !!firstReport.image_url,
+          imageUrlPreview: firstReport.image_url ? firstReport.image_url.substring(0, 80) : 'none'
+        });
+      }
+      
       return data || [];
     });
   },
 
   async updateStatus(id, status) {
+    console.log('[INFO] updateStatus() called:', { id, status });
     return withRetry(async () => {
       const { data, error } = await supabase
         .from('reports')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ status })
         .eq('id', id)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('[ERROR] Error updating status:', error);
+        throw error;
+      }
+      console.log('[SUCCESS] Status updated:', data);
       return data;
     });
   },
@@ -180,6 +197,8 @@ export const teamsApi = {
       .from('teams')
       .insert([{
         name: teamData.name,
+        phone: teamData.phone || '+1 (000) 000-0000',
+        description: teamData.description || '',
       }])
       .select()
       .single();
@@ -200,17 +219,30 @@ export const teamsApi = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('[MEMBER] Creation error:', error);
+      if (error.code === '404' || error.message?.includes('not found')) {
+        throw new Error('Team members table not found. Please ensure the database schema has been initialized.');
+      }
+      throw error;
+    }
     return data;
   },
 
   // Delete a team (will set members to unassigned)
   async deleteTeam(id) {
+    console.log('[INFO] deleteTeam() called for team:', id);
+    
     // First, unassign all members from this team
-    await supabase
+    const { error: updateError } = await supabase
       .from('team_members')
       .update({ team_id: null })
       .eq('team_id', id);
+    
+    if (updateError) {
+      console.error('[ERROR] Error unassigning members:', updateError);
+      throw updateError;
+    }
     
     // Then delete the team
     const { error } = await supabase
@@ -218,17 +250,27 @@ export const teamsApi = {
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (error) {
+      console.error('[ERROR] Error deleting team:', error);
+      throw error;
+    }
+    console.log('[SUCCESS] Team deleted:', id);
   },
 
   // Delete a team member
   async deleteMember(id) {
+    console.log('[INFO] deleteMember() called for member:', id);
+    
     const { error } = await supabase
       .from('team_members')
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (error) {
+      console.error('[ERROR] Error deleting member:', error);
+      throw error;
+    }
+    console.log('[SUCCESS] Member deleted:', id);
   },
 
   // Legacy method for backward compatibility

@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { REGIONS } from './zones';
@@ -49,11 +49,12 @@ function latLngToTile(lat: number, lng: number, zoom: number): { x: number; y: n
  * Get tile bounds for a region at a given zoom level
  */
 function getRegionTileBounds(regionKey: string, zoom: number): TileBounds | null {
-  const region = REGIONS[regionKey];
+  const region = REGIONS[regionKey as keyof typeof REGIONS];
   if (!region || !region.bounds) {
     // Use center with approximate bounds if no explicit bounds
     if (!region?.center) return null;
-    const [centerLat, centerLng] = region.center;
+    const centerLat = region.center.latitude;
+    const centerLng = region.center.longitude;
     const delta = 0.5 / Math.pow(2, zoom - 10); // Approximate bounds based on zoom
     const minTile = latLngToTile(centerLat + delta, centerLng - delta, zoom);
     const maxTile = latLngToTile(centerLat - delta, centerLng + delta, zoom);
@@ -65,7 +66,7 @@ function getRegionTileBounds(regionKey: string, zoom: number): TileBounds | null
     };
   }
   
-  const [minLat, minLng, maxLat, maxLng] = region.bounds;
+  const { minLat, minLng, maxLat, maxLng } = region.bounds;
   const minTile = latLngToTile(maxLat, minLng, zoom);
   const maxTile = latLngToTile(minLat, maxLng, zoom);
   
