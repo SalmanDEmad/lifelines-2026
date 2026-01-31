@@ -294,6 +294,12 @@ const MapScreen = () => {
   const submitVote = async (voteType: 'accurate' | 'inaccurate' | 'unclear') => {
     if (!selectedReport) return;
     
+    // Prevent voting on demo reports that haven't been synced to Supabase
+    if (selectedReport.synced === 0) {
+      Alert.alert('Cannot Vote', 'This report needs to be synced to the server before voting is enabled. Please check your connection and sync reports.');
+      return;
+    }
+    
     try {
       setVotingLoading(true);
       console.log('Submitting vote:', voteType, 'for report:', selectedReport.id);

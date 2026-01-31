@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon } from 'leaflet';
-import { RefreshCw, GripVertical, Send, MapPin, Clock, CheckCircle, AlertCircle, Cpu, Zap, TrendingUp, AlertTriangle, Users, Route } from 'lucide-react';
+import { RefreshCw, GripVertical, Send, MapPin, Clock, CheckCircle, AlertCircle, Cpu, Zap, TrendingUp, AlertTriangle, Users, Navigation } from 'lucide-react';
 import { reportsApi, teamsApi } from '../lib/supabase';
 
 // Custom marker icons
@@ -267,7 +267,7 @@ export default function Logistics() {
                 <span><strong>{teams.length}</strong> teams available for dispatch</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Route size={12} color="#8B5CF6" />
+                <Navigation size={12} color="#8B5CF6" />
                 <span>Optimal route calculated for {Math.min(teams.length, reports.filter(r => r.status !== 'resolved').length)} dispatches</span>
               </div>
             </div>

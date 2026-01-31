@@ -76,10 +76,15 @@ export const initDatabase = async (): Promise<void> => {
     // Check if user_id column exists, if not add it
     try {
       const result = await database.getFirstAsync<any>(
-        `PRAGMA table_info(reports) WHERE name='user_id';`
+        `PRAGMA table_info(reports);`
       );
       
-      if (!result) {
+      // Check if user_id column is in the results
+      const hasUserIdColumn = result && typeof result === 'object' && result.length > 0
+        ? (result as any[]).some((col: any) => col.name === 'user_id')
+        : false;
+      
+      if (!hasUserIdColumn) {
         console.log('Adding user_id column to existing reports table...');
         await database.runAsync(`ALTER TABLE reports ADD COLUMN user_id TEXT DEFAULT NULL;`);
       }
@@ -91,10 +96,15 @@ export const initDatabase = async (): Promise<void> => {
     // Check if is_demo column exists, if not add it
     try {
       const result = await database.getFirstAsync<any>(
-        `PRAGMA table_info(reports) WHERE name='is_demo';`
+        `PRAGMA table_info(reports);`
       );
       
-      if (!result) {
+      // Check if is_demo column is in the results
+      const hasDemoColumn = result && typeof result === 'object' && result.length > 0 
+        ? (result as any[]).some((col: any) => col.name === 'is_demo')
+        : false;
+      
+      if (!hasDemoColumn) {
         console.log('Adding is_demo column to existing reports table...');
         await database.runAsync(`ALTER TABLE reports ADD COLUMN is_demo INTEGER DEFAULT 0;`);
       }
