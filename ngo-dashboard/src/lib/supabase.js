@@ -12,7 +12,13 @@ function getSupabase() {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-      }
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'lifelines-ngo-dashboard',
+        },
+      },
     });
   }
   return supabaseInstance;
@@ -20,64 +26,96 @@ function getSupabase() {
 
 export const supabase = getSupabase();
 
+// Helper to handle common errors and retry with fresh connection
+const withRetry = async (fn, retries = 2) => {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isJwtError = error?.message?.includes('JWT') || error?.code === 'PGRST301';
+      const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError');
+      
+      if ((isJwtError || isNetworkError) && i < retries) {
+        console.log(`[RETRY] Attempt ${i + 1} failed, retrying...`, error.message);
+        // Clear and recreate instance on JWT errors
+        if (isJwtError) {
+          supabaseInstance = null;
+          getSupabase();
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
 // Reports API
 export const reportsApi = {
   async getAll() {
     console.log('[INFO] getAll() called');
-    const { data, error } = await supabase
-      .from('reports')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('[ERROR] Error:', error);
-      throw error;
-    }
-    console.log('[SUCCESS] Fetched', data?.length || 0, 'reports');
-    return data || [];
+    return withRetry(async () => {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('[ERROR] Error:', error);
+        throw error;
+      }
+      console.log('[SUCCESS] Fetched', data?.length || 0, 'reports');
+      return data || [];
+    });
   },
 
   async updateStatus(id, status) {
-    const { data, error } = await supabase
-      .from('reports')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    return withRetry(async () => {
+      const { data, error } = await supabase
+        .from('reports')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    });
   },
 
   async delete(id) {
-    const { error } = await supabase
-      .from('reports')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    return withRetry(async () => {
+      const { error } = await supabase
+        .from('reports')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    });
   },
 
   async getStats() {
     console.log('[INFO] getStats() called');
-    const { data, error } = await supabase
-      .from('reports')
-      .select('status');
-    
-    if (error) {
-      console.error('[ERROR] Error:', error);
-      throw error;
-    }
-    
-    const stats = {
-      total: data?.length || 0,
-      pending: data?.filter(r => r.status === 'pending' || !r.status).length || 0,
-      in_progress: data?.filter(r => r.status === 'in_progress').length || 0,
-      resolved: data?.filter(r => r.status === 'resolved').length || 0,
-    };
-    
-    console.log('[SUCCESS] Stats:', stats);
-    return stats;
+    return withRetry(async () => {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('status');
+      
+      if (error) {
+        console.error('[ERROR] Error:', error);
+        throw error;
+      }
+      
+      const stats = {
+        total: data?.length || 0,
+        pending: data?.filter(r => r.status === 'pending' || !r.status).length || 0,
+        in_progress: data?.filter(r => r.status === 'in_progress').length || 0,
+        resolved: data?.filter(r => r.status === 'resolved').length || 0,
+      };
+      
+      console.log('[SUCCESS] Stats:', stats);
+      return stats;
+    });
   }
 };
 

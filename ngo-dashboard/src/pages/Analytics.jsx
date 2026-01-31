@@ -325,28 +325,27 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Hazard Breakdown */}
+      {/* Hazard Breakdown - Updated to match civilian app categories */}
       <div className="card" style={{ padding: '20px' }}>
         <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <AlertTriangle size={20} color="#f59e0b" />
-          Hazard Subcategories
+          Hazard Categories
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
           {[
-            { name: 'UXO/Explosives', icon: '💣', count: filteredReports.filter(r => r.subcategory === 'unexploded_ordnance').length },
-            { name: 'Structural Risk', icon: '🏚️', count: filteredReports.filter(r => r.subcategory === 'structural_risk').length },
-            { name: 'Electrical', icon: '⚡', count: filteredReports.filter(r => r.subcategory === 'electrical').length },
-            { name: 'Chemical/Gas', icon: '☢️', count: filteredReports.filter(r => r.subcategory === 'chemical_gas').length },
-            { name: 'Contaminated Water', icon: '💧', count: filteredReports.filter(r => r.subcategory === 'contaminated_water').length },
-            { name: 'Medical Emergency', icon: '🚑', count: filteredReports.filter(r => r.subcategory === 'medical_emergency').length },
+            { name: 'UXOs', icon: '💣', color: '#DC2626', bgColor: '#FEE2E2', count: filteredReports.filter(r => r.subcategory?.includes('uxo')).length },
+            { name: 'Human Remains', icon: '🕯️', color: '#7C3AED', bgColor: '#EDE9FE', count: filteredReports.filter(r => r.subcategory?.includes('bodies')).length },
+            { name: 'Chemicals', icon: '☢️', color: '#F59E0B', bgColor: '#FEF3C7', count: filteredReports.filter(r => r.subcategory?.includes('chemicals')).length },
+            { name: 'Electrical Hazard', icon: '⚡', color: '#EF4444', bgColor: '#FEE2E2', count: filteredReports.filter(r => r.subcategory?.includes('electrical')).length },
+            { name: 'Blocked Road', icon: '🚧', color: '#92400E', bgColor: '#FED7AA', count: filteredReports.filter(r => r.subcategory?.includes('blocked_road') || r.category === 'blocked_road').length },
           ].map(hazard => (
             <div 
               key={hazard.name}
               style={{
                 padding: '16px',
                 borderRadius: '8px',
-                backgroundColor: '#fef3c7',
-                border: '1px solid #fcd34d',
+                backgroundColor: hazard.bgColor,
+                border: `1px solid ${hazard.color}33`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
@@ -358,8 +357,41 @@ export default function Analytics() {
                 style={{ width: '32px', height: '32px' }} 
               />
               <div>
-                <div style={{ fontWeight: '600', fontSize: '14px' }}>{hazard.name}</div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{hazard.count}</div>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: hazard.color }}>{hazard.name}</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: hazard.color }}>{hazard.count}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Materials Breakdown */}
+        <h4 style={{ marginTop: '24px', marginBottom: '12px' }}>Materials Detected</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {[
+            { name: 'Concrete', icon: '🧱', color: '#64748B', bgColor: '#F1F5F9', count: filteredReports.filter(r => r.subcategory?.includes('concrete')).length },
+            { name: 'Wood', icon: '🪵', color: '#92400E', bgColor: '#FED7AA', count: filteredReports.filter(r => r.subcategory?.includes('wood')).length },
+            { name: 'Metal', icon: '🔩', color: '#475569', bgColor: '#E2E8F0', count: filteredReports.filter(r => r.subcategory?.includes('metal')).length },
+          ].map(material => (
+            <div 
+              key={material.name}
+              style={{
+                padding: '16px',
+                borderRadius: '8px',
+                backgroundColor: material.bgColor,
+                border: `1px solid ${material.color}33`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              <img 
+                src={getTwemojiUrl(material.icon)} 
+                alt={material.icon} 
+                style={{ width: '32px', height: '32px' }} 
+              />
+              <div>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: material.color }}>{material.name}</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: material.color }}>{material.count}</div>
               </div>
             </div>
           ))}

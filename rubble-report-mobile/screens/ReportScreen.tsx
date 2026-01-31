@@ -18,6 +18,7 @@ import { Input, InputField, Image } from '@gluestack-ui/themed';
 import { useReportStore } from '../store/reportStore';
 import { useTranslation } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
+import { getTwemojiUrl } from '../utils/emoji';
 import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryIcon, Icons, ICON_SIZES } from '../design';
 import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
 import { isInGaza, isInPalestineRegion } from '../utils/geospatial';
@@ -25,18 +26,18 @@ import { AlertTriangle, AlertCircle, Flame, Zap, Navigation } from 'lucide-react
 
 // Material types for rubble with icons
 const MATERIALS = [
-  { id: 'concrete', label: 'Concrete', color: '#64748B', icon: AlertCircle },
-  { id: 'wood', label: 'Wood', color: '#92400E', icon: Navigation },
-  { id: 'metal', label: 'Metal', color: '#475569', icon: Zap },
+  { id: 'concrete', label: 'Concrete', emoji: '🏛️', color: '#64748B' },
+  { id: 'wood', label: 'Wood', emoji: '🪵', color: '#92400E' },
+  { id: 'metal', label: 'Metal', emoji: '⚙️', color: '#475569' },
 ];
 
-// Optional hazards with icons
+// Optional hazards with emojis
 const HAZARDS = [
-  { id: 'uxo', label: 'UXOs', color: '#DC2626', icon: AlertTriangle },
-  { id: 'bodies', label: 'Human Remains', color: '#7C3AED', icon: AlertCircle },
-  { id: 'chemicals', label: 'Chemicals', color: '#F59E0B', icon: Flame },
-  { id: 'electrical', label: 'Electrical Hazard', color: '#EF4444', icon: Zap },
-  { id: 'blocked_road', label: 'Blocked Road', color: '#92400E', icon: AlertTriangle },
+  { id: 'uxo', label: 'UXOs', emoji: '💣', color: '#DC2626' },
+  { id: 'bodies', label: 'Human Remains', emoji: '🧎', color: '#7C3AED' },
+  { id: 'chemicals', label: 'Chemicals', emoji: '🧪', color: '#F59E0B' },
+  { id: 'electrical', label: 'Electrical Hazard', emoji: '⚡', color: '#EF4444' },
+  { id: 'blocked_road', label: 'Blocked Road', emoji: '🛣️', color: '#92400E' },
 ];
 
 const ReportScreen = () => {
@@ -357,14 +358,14 @@ const ReportScreen = () => {
     id, 
     label, 
     color, 
-    icon: IconComponent,
+    emoji,
     isSelected, 
     onToggle 
   }: { 
     id: string; 
     label: string; 
     color: string;
-    icon?: React.ComponentType<{ size: number; color: string }>;
+    emoji: string;
     isSelected: boolean;
     onToggle: (id: string) => void;
   }) => (
@@ -386,12 +387,12 @@ const ReportScreen = () => {
       accessibilityState={{ selected: isSelected }}
     >
       <HStack space="md" alignItems="center" justifyContent="center">
-        {IconComponent && (
-          <IconComponent 
-            size={20} 
-            color={isSelected ? COLORS.white : color} 
-          />
-        )}
+        <Image
+          source={{ uri: getTwemojiUrl(emoji) }}
+          alt={label}
+          width={24}
+          height={24}
+        />
         <Text
           color={isSelected ? COLORS.white : COLORS.text}
           fontWeight="700"
@@ -431,7 +432,7 @@ const ReportScreen = () => {
                     id={material.id}
                     label={t(`materials.${material.id}`) || material.label}
                     color={material.color}
-                    icon={material.icon}
+                    emoji={material.emoji}
                     isSelected={isSelected}
                     onToggle={toggleMaterial}
                   />
@@ -459,7 +460,7 @@ const ReportScreen = () => {
                     id={hazard.id}
                     label={t(`hazards.${hazard.id}`) || hazard.label}
                     color={hazard.color}
-                    icon={hazard.icon}
+                    emoji={hazard.emoji}
                     isSelected={isSelected}
                     onToggle={toggleHazard}
                   />

@@ -221,10 +221,71 @@ export default function Reports() {
                 </p>
               </div>
 
+              {/* Materials Section */}
+              {selectedReport.subcategory && selectedReport.subcategory.includes('materials:') && (
+                <div className="form-group">
+                  <label>Materials Detected</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                    {selectedReport.subcategory.split('|')[0]?.replace('materials:', '').split(',').map((material, idx) => (
+                      <span 
+                        key={idx}
+                        style={{ 
+                          backgroundColor: '#3B82F6', 
+                          color: 'white', 
+                          padding: '4px 10px', 
+                          borderRadius: '4px', 
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          textTransform: 'capitalize'
+                        }}
+                      >
+                        {material.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hazards Section */}
+              {selectedReport.subcategory && selectedReport.subcategory.includes('hazards:') && (
+                <div className="form-group">
+                  <label>⚠️ Hazards Identified</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                    {selectedReport.subcategory.split('|').find(p => p.startsWith('hazards:'))?.replace('hazards:', '').split(',').map((hazard, idx) => {
+                      const hazardConfig = {
+                        uxo: { color: '#DC2626', label: 'UXOs' },
+                        bodies: { color: '#7C3AED', label: 'Human Remains' },
+                        chemicals: { color: '#F59E0B', label: 'Chemicals' },
+                        electrical: { color: '#EF4444', label: 'Electrical' },
+                        blocked_road: { color: '#92400E', label: 'Blocked Road' }
+                      };
+                      const config = hazardConfig[hazard.trim()] || { color: '#6B7280', label: hazard.trim() };
+                      return (
+                        <span 
+                          key={idx}
+                          style={{ 
+                            backgroundColor: config.color, 
+                            color: 'white', 
+                            padding: '4px 10px', 
+                            borderRadius: '4px', 
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          {config.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {selectedReport.description && (
                 <div className="form-group">
-                  <label>Description</label>
-                  <p>{selectedReport.description}</p>
+                  <label>📝 User Comments</label>
+                  <p style={{ background: '#f9fafb', padding: '10px', borderRadius: '6px', marginTop: '6px' }}>
+                    {selectedReport.description}
+                  </p>
                 </div>
               )}
 

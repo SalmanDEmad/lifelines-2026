@@ -10,6 +10,16 @@ body {
   color: #1a1a2e;
 }
 
+/* Spinning animation for AI button */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
 .app {
   display: flex;
   min-height: 100vh;
