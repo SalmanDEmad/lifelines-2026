@@ -169,9 +169,9 @@ const syncSingleReport = async (report: any): Promise<boolean> => {
 
       // Upload photo if present
       let imageUrl: string | null = null;
-      if (report.image_uri) {
+      if (report.imageUri) {
         console.log(`[PHOTO] Uploading photo for report ${report.id}...`);
-        imageUrl = await uploadPhotoToSupabase(report.image_uri, report.id);
+        imageUrl = await uploadPhotoToSupabase(report.imageUri, report.id);
         if (imageUrl) {
           console.log(`[PHOTO] ✓ Photo uploaded: ${imageUrl}`);
         } else {
