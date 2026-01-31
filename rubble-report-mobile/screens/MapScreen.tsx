@@ -298,33 +298,27 @@ const MapScreen = () => {
       setVotingLoading(true);
       console.log('Submitting vote:', voteType, 'for report:', selectedReport.id);
       
-      // TODO: When backend is connected, use this:
-      // const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-      // const token = await getAuthToken();
-      // const response = await fetch(`${API_URL}/api/reports/${selectedReport.id}/vote`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify({ voteType }),
-      // });
-      // const data = await response.json();
+      // IMPORTANT: Voting should only work when the user is geographically close to the report location.
+      // This is a crucial feature to ensure that only eyewitnesses can validate reports.
+      // TODO: When backend is connected, implement proximity check:
+      // - Get user's current location
+      // - Calculate distance to report coordinates
+      // - Only allow voting if user is within ~100-500 meters of the report
+      // - Reject votes from users far away to prevent spam and ensure credibility
       
-      // For now, use Supabase directly
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user?.id) {
-        Alert.alert('Authentication Required', 'You must be logged in to vote.');
-        setVotingLoading(false);
-        return;
-      }
+      // For now, enable voting for demo purposes without login
+      // In production, proximity validation should be enforced on the backend
+      
+      // Generate a demo user ID for testing (in production, use authenticated user ID)
+      const user = await supabase.auth.getUser();
+      const userId = user?.data?.user?.id || `demo_user_${Date.now()}`;
 
       const { error } = await supabase
         .from('report_votes')
         .upsert(
           {
             report_id: selectedReport.id!,
-            user_id: user.user.id,
+            user_id: userId,
             vote_type: voteType,
           },
           { onConflict: 'report_id,user_id' }
