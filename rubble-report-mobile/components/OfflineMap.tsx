@@ -99,6 +99,9 @@ export default function OfflineMap({ reports, onReportPress, userLocation, regio
         description: report.description || '',
         color: getCategoryColor(report.category),
         title: report.category.replace(/_/g, ' '),
+        // Add status: 'pending' for unsynced reports, 'in-progress' for synced reports
+        status: report.synced === 0 ? 'pending' : 'in-progress',
+        statusLabel: report.synced === 0 ? 'Pending' : 'In Progress',
       },
       geometry: {
         type: 'Point',
@@ -150,18 +153,37 @@ export default function OfflineMap({ reports, onReportPress, userLocation, regio
     .marker-popup {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       padding: 8px 12px;
-      max-width: 200px;
+      max-width: 220px;
     }
     .marker-popup h3 {
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 4px;
       text-transform: capitalize;
+      margin: 0;
     }
     .marker-popup p {
       font-size: 12px;
       color: #666;
-      margin: 0;
+      margin: 4px 0 0 0;
+    }
+    .marker-status {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-pending {
+      background-color: #FEE2E2;
+      color: #991B1B;
+    }
+    .status-in-progress {
+      background-color: #DBEAFE;
+      color: #1E40AF;
     }
 
     .maplibregl-popup-content {
@@ -293,13 +315,15 @@ export default function OfflineMap({ reports, onReportPress, userLocation, regio
         const props = feature.properties;
         const coords = feature.geometry.coordinates.slice();
 
-        // Create popup
+        // Create popup with status badge
+        const statusClass = props.status === 'pending' ? 'status-pending' : 'status-in-progress';
         new maplibregl.Popup({ offset: 15 })
           .setLngLat(coords)
           .setHTML(\`
             <div class="marker-popup">
               <h3>\${props.title}</h3>
               <p>\${props.description || 'No description'}</p>
+              <div class="marker-status \${statusClass}">\${props.statusLabel}</div>
             </div>
           \`)
           .addTo(map);
