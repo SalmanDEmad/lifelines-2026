@@ -78,6 +78,7 @@ export const COLORS = {
   success: '#4CAF50',
   successLight: '#81C784',
   warning: '#FF9800',
+  warningLight: '#FEF3C7',
   error: '#D32F2F',
   errorLight: '#EF5350',
 

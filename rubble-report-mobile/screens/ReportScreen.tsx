@@ -18,26 +18,24 @@ import { Input, InputField, Image } from '@gluestack-ui/themed';
 import { useReportStore } from '../store/reportStore';
 import { useTranslation } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
-import { getTwemojiUrl } from '../utils/emoji';
-import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, getCategoryColor, getCategoryIcon, Icons, ICON_SIZES } from '../design';
-import { getZonesByRegion, getRegionConfig, DEFAULT_REGION, REGIONS } from '../utils/zones';
+import { COLORS, SPACING, RADII, SHADOWS, LAYOUT, Icons, ICON_SIZES } from '../design';
+import { getZonesByRegion, DEFAULT_REGION, REGIONS } from '../utils/zones';
 import { isInGaza, isInPalestineRegion } from '../utils/geospatial';
-import { AlertTriangle, AlertCircle, Flame, Zap, Navigation } from 'lucide-react-native';
 
-// Material types for rubble with icons
+// Material types for rubble - using native emoji display
 const MATERIALS = [
-  { id: 'concrete', label: 'Concrete', emoji: '🏛️', color: '#64748B' },
-  { id: 'wood', label: 'Wood', emoji: '🪵', color: '#92400E' },
-  { id: 'metal', label: 'Metal', emoji: '⚙️', color: '#475569' },
+  { id: 'concrete', label: 'Concrete', emoji: '🏛️', color: '#64748B', icon: '🧱' },
+  { id: 'wood', label: 'Wood', emoji: '🪵', color: '#92400E', icon: '🌲' },
+  { id: 'metal', label: 'Metal', emoji: '⚙️', color: '#475569', icon: '🔩' },
 ];
 
 // Optional hazards with emojis
 const HAZARDS = [
-  { id: 'uxo', label: 'UXOs', emoji: '💣', color: '#DC2626' },
-  { id: 'bodies', label: 'Human Remains', emoji: '🧎', color: '#7C3AED' },
-  { id: 'chemicals', label: 'Chemicals', emoji: '🧪', color: '#F59E0B' },
-  { id: 'electrical', label: 'Electrical Hazard', emoji: '⚡', color: '#EF4444' },
-  { id: 'blocked_road', label: 'Blocked Road', emoji: '🛣️', color: '#92400E' },
+  { id: 'uxo', label: 'UXOs', emoji: '💣', color: '#DC2626', icon: '⚠️' },
+  { id: 'bodies', label: 'Human Remains', emoji: '🧎', color: '#7C3AED', icon: '🚨' },
+  { id: 'chemicals', label: 'Chemicals', emoji: '🧪', color: '#F59E0B', icon: '☢️' },
+  { id: 'electrical', label: 'Electrical Hazard', emoji: '⚡', color: '#EF4444', icon: '🔌' },
+  { id: 'blocked_road', label: 'Blocked Road', emoji: '🛣️', color: '#92400E', icon: '🚧' },
 ];
 
 const ReportScreen = () => {
@@ -370,40 +368,49 @@ const ReportScreen = () => {
     onToggle: (id: string) => void;
   }) => (
     <Pressable
-      py={SPACING.base}
-      px={SPACING.lg}
-      borderRadius={RADII.lg}
-      bg={isSelected ? color : COLORS.surface}
-      borderWidth={2}
+      flex={1}
+      minWidth="30%"
+      aspectRatio={1}
+      borderRadius={RADII.xl}
+      bg={isSelected ? color : COLORS.white}
+      borderWidth={3}
       borderColor={isSelected ? color : COLORS.border}
       onPress={() => onToggle(id)}
-      minHeight={LAYOUT.minTouchTarget}
       justifyContent="center"
-      style={isSelected ? { ...SHADOWS.md, elevation: 5 } : {}}
+      alignItems="center"
+      style={isSelected ? { ...SHADOWS.lg, elevation: 8 } : SHADOWS.sm}
       accessible={true}
       accessibilityLabel={label}
       accessibilityHint={isSelected ? `${label} is selected` : `Select ${label}`}
-      accessibilityRole="radio"
-      accessibilityState={{ selected: isSelected }}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isSelected }}
     >
-      <HStack space="md" alignItems="center" justifyContent="center">
-        <Image
-          source={{ uri: getTwemojiUrl(emoji) }}
-          alt={label}
-          width={24}
-          height={24}
-        />
+      <VStack alignItems="center" space="sm">
+        <Text fontSize={36} style={{ lineHeight: 44 }}>
+          {emoji}
+        </Text>
         <Text
           color={isSelected ? COLORS.white : COLORS.text}
           fontWeight="700"
-          fontSize={14}
+          fontSize={13}
+          textAlign="center"
+          numberOfLines={2}
         >
           {label}
         </Text>
         {isSelected && (
-          <Icons.Synced size={ICON_SIZES.sm} color={COLORS.white} style={{ marginLeft: 4 }} />
+          <Box 
+            position="absolute" 
+            top={8} 
+            right={8}
+            bg="rgba(255,255,255,0.3)"
+            borderRadius={RADII.full}
+            p={4}
+          >
+            <Icons.Synced size={16} color={COLORS.white} />
+          </Box>
         )}
-      </HStack>
+      </VStack>
     </Pressable>
   );
 
@@ -422,8 +429,8 @@ const ReportScreen = () => {
 
           {/* Materials Section */}
           <VStack space="md">
-            <SectionHeading>{t('report.materialsRequired') || 'Rubble - Select Materials (Required)'}</SectionHeading>
-            <VStack space="sm">
+            <SectionHeading>{t('report.materialsRequired') || 'Materials (Required)'}</SectionHeading>
+            <HStack flexWrap="wrap" justifyContent="space-between" style={{ gap: 12 }}>
               {MATERIALS.map((material) => {
                 const isSelected = selectedMaterials.includes(material.id);
                 return (
@@ -438,11 +445,11 @@ const ReportScreen = () => {
                   />
                 );
               })}
-            </VStack>
+            </HStack>
             {selectedMaterials.length > 0 && (
               <Box bg={COLORS.successLight} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
                 <Text fontSize={13} color={COLORS.success} fontWeight="600">
-                  ✓ {selectedMaterials.length} {t('report.materialsSelected')?.replace('{count}', '') || 'material(s) selected'}
+                  ✓ {selectedMaterials.length} material(s) selected
                 </Text>
               </Box>
             )}
@@ -450,27 +457,28 @@ const ReportScreen = () => {
 
           {/* Hazards Section (Optional) */}
           <VStack space="md">
-            <SectionHeading>{t('report.hazardsOptional') || 'Hazards - Select Any (Optional)'}</SectionHeading>
-            <VStack space="sm">
+            <SectionHeading>{t('report.hazardsOptional') || 'Hazards (Optional)'}</SectionHeading>
+            <HStack flexWrap="wrap" justifyContent="flex-start" style={{ gap: 12 }}>
               {HAZARDS.map((hazard) => {
                 const isSelected = selectedHazards.includes(hazard.id);
                 return (
-                  <TagButton
-                    key={hazard.id}
-                    id={hazard.id}
-                    label={t(`hazards.${hazard.id}`) || hazard.label}
-                    color={hazard.color}
-                    emoji={hazard.emoji}
-                    isSelected={isSelected}
-                    onToggle={toggleHazard}
-                  />
+                  <Box key={hazard.id} width="30%">
+                    <TagButton
+                      id={hazard.id}
+                      label={t(`hazards.${hazard.id}`) || hazard.label}
+                      color={hazard.color}
+                      emoji={hazard.emoji}
+                      isSelected={isSelected}
+                      onToggle={toggleHazard}
+                    />
+                  </Box>
                 );
               })}
-            </VStack>
+            </HStack>
             {selectedHazards.length > 0 && (
-              <Box bg={COLORS.successLight} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
-                <Text fontSize={13} color={COLORS.success} fontWeight="600">
-                  ✓ {selectedHazards.length} {t('report.hazardsIdentified')?.replace('{count}', '') || 'hazard(s) identified'}
+              <Box bg={COLORS.warningLight || '#FEF3C7'} borderRadius={RADII.md} px={SPACING.md} py={SPACING.sm}>
+                <Text fontSize={13} color={COLORS.warning || '#D97706'} fontWeight="600">
+                  ⚠️ {selectedHazards.length} hazard(s) identified
                 </Text>
               </Box>
             )}
