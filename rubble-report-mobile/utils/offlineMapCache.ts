@@ -10,10 +10,10 @@ const CACHE_METADATA_KEY = 'offline_map_cache_metadata';
 const TILE_SERVER = 'https://tile.openstreetmap.org';
 
 // Maximum tiles to cache per region (to manage storage)
-const MAX_TILES_PER_REGION = 500;
+const MAX_TILES_PER_REGION = 1000;
 
 // Zoom levels to cache (higher = more detail but more tiles)
-const CACHE_ZOOM_LEVELS = [10, 12, 14, 16]; // Good balance for navigation
+const CACHE_ZOOM_LEVELS = [10, 12, 14]; // Reduced from [10, 12, 14, 16] - level 16 is too detailed
 
 interface CacheMetadata {
   regions: {
@@ -208,7 +208,7 @@ export async function downloadRegionTiles(
 
     let downloaded = 0;
     let totalSize = 0;
-    const batchSize = 5; // Download 5 tiles at a time
+    const batchSize = 15; // Increased from 5 to 15 - faster parallel downloads
 
     for (let i = 0; i < tilesToDownload.length; i += batchSize) {
       const batch = tilesToDownload.slice(i, i + batchSize);
@@ -223,8 +223,8 @@ export async function downloadRegionTiles(
       const progress = 10 + Math.round((downloaded / tilesToDownload.length) * 85);
       onProgress?.(progress, `Downloaded ${downloaded}/${tilesToDownload.length} tiles`);
       
-      // Small delay to not overwhelm the tile server
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Reduced delay - 50ms instead of 100ms to not overwhelm the tile server
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     // Update metadata

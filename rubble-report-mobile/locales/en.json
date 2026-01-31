@@ -282,6 +282,8 @@
     "map": "Map",
     "history": "History",
     "report": "Report",
-    "settings": "Settings"
+    "settings": "Settings",
+    "back": "Back",
+    "next": "Next"
   }
 }
