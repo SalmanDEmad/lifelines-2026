@@ -156,8 +156,7 @@
     "syncErrorTitle": "خطأ المزامنة",
     "syncErrorMessage": "فشل مزامنة التقارير. تحقق من اتصالك بالإنترنت.",
     "loadDemoReports": "تحميل التقارير التوضيحية",
-    "goToLocation": "الذهاب إلى الموقع",
-    "close": "إغلاق"
+    "goToLocation": "الذهاب إلى الموقع"
   },
   "categories": {
     "rubble": "أنقاض",
@@ -178,10 +177,16 @@
     "refresh": "تحديث",
     "loading": "جاري التحميل...",
     "cancel": "إلغاء",
+    "clear": "حذف",
     "back": "رجوع",
     "next": "التالي",
     "getStarted": "ابدأ الآن!",
-    "skip": "تخطي"
+    "skip": "تخطي",
+    "error": "خطأ",
+    "unknownError": "حدث خطأ غير معروف",
+    "enabled": "مفعل",
+    "notDetected": "لم يتم الكشف",
+    "close": "إغلاق"
   },
   "settings": {
     "completeProfile": "أكمل ملفك الشخصي لتخصيص تجربتك!",
@@ -271,19 +276,6 @@
     "withPhotosDesc": "تقارير كاملة مع الصور (~500 كيلوبايت لكل تقرير)",
     "withoutPhotos": "مزامنة بدون صور",
     "withoutPhotosDesc": "نص وموقع فقط (~1 كيلوبايت لكل تقرير)"
-  },
-  "common": {
-    "cancel": "إلغاء",
-    "clear": "حذف",
-    "error": "خطأ",
-    "unknownError": "حدث خطأ غير معروف",
-    "enabled": "مفعل",
-    "notDetected": "لم يتم الكشف",
-    "map": "الخريطة",
-    "history": "السجل",
-    "report": "التقرير",
-    "settings": "الإعدادات",
-    "back": "رجوع",
-    "next": "التالي"
+
   }
 }

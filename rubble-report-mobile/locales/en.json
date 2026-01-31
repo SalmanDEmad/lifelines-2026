@@ -156,8 +156,7 @@
     "syncErrorTitle": "Sync Error",
     "syncErrorMessage": "Failed to sync reports. Check your internet connection.",
     "loadDemoReports": "Load Demo Reports",
-    "goToLocation": "Go to Location",
-    "close": "Close"
+    "goToLocation": "Go to Location"
   },
   "categories": {
     "rubble": "Rubble",
@@ -178,10 +177,16 @@
     "refresh": "Refresh",
     "loading": "Loading...",
     "cancel": "Cancel",
+    "clear": "Clear",
     "back": "Back",
     "next": "Next",
     "getStarted": "Get started!",
-    "skip": "Skip"
+    "skip": "Skip",
+    "error": "Error",
+    "unknownError": "Unknown error occurred",
+    "enabled": "Enabled",
+    "notDetected": "Not Detected",
+    "close": "Close"
   },
   "settings": {
     "completeProfile": "Complete your profile to personalize your experience!",
@@ -271,19 +276,5 @@
     "withPhotosDesc": "Full reports with images (~500KB each)",
     "withoutPhotos": "Sync without photos",
     "withoutPhotosDesc": "Text and location only (~1KB each)"
-  },
-  "common": {
-    "cancel": "Cancel",
-    "clear": "Clear",
-    "error": "Error",
-    "unknownError": "Unknown error occurred",
-    "enabled": "Enabled",
-    "notDetected": "Not Detected",
-    "map": "Map",
-    "history": "History",
-    "report": "Report",
-    "settings": "Settings",
-    "back": "Back",
-    "next": "Next"
   }
 }
