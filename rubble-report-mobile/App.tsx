@@ -89,12 +89,12 @@ function AppContent() {
   // Set up notification listeners
   useEffect(() => {
     // Listener for notifications received while app is in foreground
-    const notificationReceivedSubscription = addNotificationReceivedListener((notification) => {
+    const notificationReceivedSubscription = addNotificationReceivedListener((notification: any) => {
       console.log('Notification received:', notification);
     });
 
     // Listener for when user taps on a notification
-    const notificationResponseSubscription = addNotificationResponseListener((response) => {
+    const notificationResponseSubscription = addNotificationResponseListener((response: any) => {
       console.log('Notification tapped:', response);
       const data = response.notification.request.content.data;
       
@@ -105,8 +105,8 @@ function AppContent() {
     });
 
     return () => {
-      notificationReceivedSubscription.remove();
-      notificationResponseSubscription.remove();
+      notificationReceivedSubscription?.remove();
+      notificationResponseSubscription?.remove();
     };
   }, []);
 

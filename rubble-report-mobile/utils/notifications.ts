@@ -35,9 +35,21 @@ export async function registerForPushNotifications(): Promise<string | null> {
 }
 
 /**
+ * Save push token to user profile
+ */
+export async function savePushTokenToProfile(userId?: string): Promise<void> {
+  console.log('[DEMO MODE] Push token profile save disabled');
+}
+
+/**
  * Register device for notifications
  */
-export async function registerDeviceForNotifications(): Promise<boolean> {
+export async function registerDeviceForNotifications(
+  region?: string,
+  latitude?: number,
+  longitude?: number,
+  radiusMiles?: number
+): Promise<boolean> {
   console.log('[DEMO MODE] Device notifications disabled');
   return false;
 }
@@ -81,14 +93,14 @@ export async function sendLocalNotification(): Promise<void> {
 /**
  * Notify sync complete
  */
-export async function notifySyncComplete(): Promise<void> {
+export async function notifySyncComplete(successCount?: number, failCount?: number): Promise<void> {
   console.log('[DEMO MODE] Sync notifications disabled');
 }
 
 /**
  * Notify report synced
  */
-export async function notifyReportSynced(): Promise<void> {
+export async function notifyReportSynced(reportId?: string, category?: string): Promise<void> {
   console.log('[DEMO MODE] Report sync notifications disabled');
 }
 
@@ -130,15 +142,19 @@ export async function setBadgeCount(): Promise<void> {
 /**
  * Add notification received listener
  */
-export function addNotificationReceivedListener() {
-  return null;
+export function addNotificationReceivedListener(callback?: (notification: any) => void) {
+  return {
+    remove: () => {}
+  };
 }
 
 /**
  * Add notification response listener
  */
-export function addNotificationResponseListener() {
-  return null;
+export function addNotificationResponseListener(callback?: (response: any) => void) {
+  return {
+    remove: () => {}
+  };
 }
 
 /**

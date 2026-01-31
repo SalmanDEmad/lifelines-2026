@@ -311,7 +311,11 @@ const MapScreen = () => {
       
       // Generate a demo user ID for testing (in production, use authenticated user ID)
       const user = await supabase.auth.getUser();
-      const userId = user?.data?.user?.id || `demo_user_${Date.now()}`;
+      // Use a proper UUID format for demo users (namespace-based UUID v5-like format)
+      // Format: 00000000-0000-0000-0000-{12 hex digits from timestamp}
+      const timestamp = Date.now().toString(16).padStart(12, '0');
+      const demoUserId = `00000000-0000-0000-0000-${timestamp}`;
+      const userId = user?.data?.user?.id || demoUserId;
 
       const { error } = await supabase
         .from('report_votes')
